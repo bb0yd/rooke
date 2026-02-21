@@ -1,0 +1,234 @@
+.container {
+  --sq: min((100vh - 180px) / 8, (100vw - 320px) / 8, 100px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.controls button,
+.controls select {
+  background: #2a2a4a;
+  color: #eee;
+  border: 1px solid #444;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.controls button:hover,
+.controls select:hover {
+  background: #3a3a5a;
+}
+
+.saveBtn {
+  background: #2e7d32 !important;
+}
+
+.saveBtn:hover {
+  background: #388e3c !important;
+}
+
+.saveBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+.status {
+  font-size: 1.1rem;
+  font-weight: 600;
+  min-height: 1.4em;
+}
+
+.capturedRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  font-size: 1.4rem;
+}
+
+.boardWrapper {
+  display: flex;
+  gap: 0;
+}
+
+.rankLabels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding-right: 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.rankLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--sq);
+}
+
+.boardAndFiles {
+  display: flex;
+  flex-direction: column;
+}
+
+.boardContainer {
+  border: 3px solid #111;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(8, var(--sq));
+  grid-template-rows: repeat(8, var(--sq));
+}
+
+.fileLabels {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 4px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.fileLabel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--sq);
+}
+
+.square {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--sq) * 0.7);
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+  transition: background 0.15s;
+  line-height: 1;
+}
+
+.selected {
+  outline: 3px solid #ffeb3b;
+  outline-offset: -3px;
+  z-index: 1;
+}
+
+.legalMove::after {
+  content: '';
+  position: absolute;
+  width: calc(var(--sq) * 0.28);
+  height: calc(var(--sq) * 0.28);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 50%;
+}
+
+.legalCapture {
+  outline: 3px solid rgba(0, 0, 0, 0.35);
+  outline-offset: -3px;
+}
+
+.lastMoveFrom,
+.lastMoveTo {
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 0, 0.35);
+}
+
+.inCheck {
+  background: radial-gradient(circle, #ff0000 0%, rgba(255, 0, 0, 0.4) 60%, transparent 100%) !important;
+}
+
+.whitePiece {
+  color: #fff;
+  text-shadow:
+    -1px -1px 0 #000,
+     1px -1px 0 #000,
+    -1px  1px 0 #000,
+     1px  1px 0 #000,
+     0   -1px 0 #000,
+     0    1px 0 #000,
+    -1px  0   0 #000,
+     1px  0   0 #000;
+}
+
+.blackPiece {
+  color: #222;
+  text-shadow:
+    -1px -1px 0 rgba(255,255,255,0.4),
+     1px -1px 0 rgba(255,255,255,0.4),
+    -1px  1px 0 rgba(255,255,255,0.4),
+     1px  1px 0 rgba(255,255,255,0.4);
+}
+
+.promotionOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.promotionDialog {
+  background: #2a2a4a;
+  border: 2px solid #555;
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+}
+
+.promotionDialog h3 {
+  margin-bottom: 12px;
+}
+
+.promotionPieces {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.promotionPiece {
+  font-size: calc(var(--sq) * 0.6);
+  width: calc(var(--sq) * 0.85);
+  height: calc(var(--sq) * 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  background: #3a3a5a;
+  border: 2px solid #555;
+  transition: background 0.15s;
+}
+
+.promotionPiece:hover {
+  background: #4a4a6a;
+}
+
+.savedMsg {
+  color: #4caf50;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 1.2em;
+}
