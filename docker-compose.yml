@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rooke
+      POSTGRES_USER: rooke
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rookechess}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: rooke
+      DB_USER: rooke
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-rookechess}
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-something-secret}
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
