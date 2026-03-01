@@ -1,0 +1,266 @@
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+}
+
+.boardColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.trainerBoard {
+  --sq: min((100vh - 180px) / 8, (100vw - 680px) / 8, 85px) !important;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  width: 100%;
+  justify-content: center;
+}
+
+.toolBtn {
+  background: #2a2a4a;
+  color: #ccc;
+  border: 1px solid #444;
+  width: 40px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.toolBtn:hover:not(:disabled) {
+  background: #3a3a5a;
+  color: #fff;
+}
+
+.toolBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.hintToolBtn {
+  width: auto;
+  padding: 0 14px;
+  gap: 6px;
+  font-size: 0.9rem;
+  border-color: #4a6a9a;
+  background: #2a3a5a;
+}
+
+.hintToolBtn:hover:not(:disabled) {
+  background: #3a4a6a;
+}
+
+.toolSpacer {
+  flex: 1;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-width: 240px;
+  max-width: 340px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.openingName {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.lineName {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.coachBubble {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.coachIcon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
+.coachIcon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.bubble {
+  background: #e8e8e8;
+  color: #1a1a1a;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  position: relative;
+}
+
+.bubbleCorrect {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
+.bubbleIncorrect {
+  background: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+}
+
+.bubbleComplete {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
+.moveList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-family: monospace;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.moveNumber {
+  color: #777;
+  min-width: 2ch;
+}
+
+.move {
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.move:hover {
+  background: #333;
+}
+
+.movePlayed {
+  color: #4caf50;
+}
+
+.moveViewing {
+  background: #3a3a5a;
+  outline: 1px solid #7ab3ff;
+}
+
+.moveCurrent {
+  background: #3a3a5a;
+  font-weight: 700;
+}
+
+.moveFuture {
+  color: #666;
+  cursor: default;
+}
+
+.moveFuture:hover {
+  background: transparent;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.buttons button {
+  background: #2a2a4a;
+  color: #eee;
+  border: 1px solid #444;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.buttons button:hover {
+  background: #3a3a5a;
+}
+
+.progressSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressLabel {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background: #333;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #4caf50;
+  border-radius: 3px;
+  transition: width 0.3s;
+}
+
+.lineSelector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lineBtn {
+  font-size: 0.8rem !important;
+  padding: 4px 10px !important;
+  background: #2a2a4a;
+  color: #eee;
+  border: 1px solid #444;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lineBtn:hover {
+  background: #3a3a5a;
+}
+
+.lineBtnActive {
+  background: #3a3a6a !important;
+  border-color: #7ab3ff !important;
+}
+
+.lineBtnComplete {
+  border-color: #4caf50 !important;
+  color: #4caf50;
+}

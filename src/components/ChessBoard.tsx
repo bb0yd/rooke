@@ -1,19 +1,15 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Chess, Square, PieceSymbol, Color, Move } from 'chess.js';
 import styles from './ChessBoard.module.css';
+import { getPieceSvg } from './ChessPieces';
 
 const THEMES: Record<string, { light: string; dark: string }> = {
-  classic: { light: '#f0e4c8', dark: '#b0c4de' },
+  classic: { light: '#eae9d4', dark: '#507297' },
   green:   { light: '#eeeed2', dark: '#769656' },
   brown:   { light: '#f0d9b5', dark: '#b58863' },
   dark:    { light: '#ddd',    dark: '#555' },
-};
-
-const PIECE_UNICODE: Record<string, string> = {
-  wK: '\u265A', wQ: '\u265B', wR: '\u265C', wB: '\u265D', wN: '\u265E', wP: '\u265F',
-  bK: '\u265A', bQ: '\u265B', bR: '\u265C', bB: '\u265D', bN: '\u265E', bP: '\u265F',
 };
 
 const PIECE_ORDER: Record<string, number> = { q: 0, r: 1, b: 2, n: 3, p: 4 };
@@ -26,10 +22,12 @@ interface LastMove {
 interface Props {
   readOnly?: boolean;
   initialPgn?: string;
-}
-
-function getPieceKey(color: Color, type: PieceSymbol): string {
-  return (color === 'w' ? 'w' : 'b') + type.toUpperCase();
+  externalGame?: Chess;
+  onMoveRequest?: (from: Square, to: Square, promotion?: PieceSymbol) => void;
+  hideControls?: boolean;
+  initialFlipped?: boolean;
+  externalLastMove?: { from: string; to: string } | null;
+  className?: string;
 }
 
 function coordsToSquare(col: number, row: number): Square {
@@ -66,50 +64,71 @@ function cloneGame(game: Chess): Chess {
   return g;
 }
 
-export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
+export default function ChessBoard({
+  readOnly = false,
+  initialPgn,
+  externalGame,
+  onMoveRequest,
+  hideControls = false,
+  initialFlipped = false,
+  externalLastMove,
+  className,
+}: Props) {
   const [game, setGame] = useState<Chess>(() => {
     const g = new Chess();
     if (initialPgn) g.loadPgn(initialPgn);
     return g;
   });
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null);
-  const [flipped, setFlipped] = useState(false);
+  const [flipped, setFlipped] = useState(initialFlipped);
   const [currentTheme, setCurrentTheme] = useState('classic');
   const [lastMove, setLastMove] = useState<LastMove | null>(null);
   const [pendingPromotion, setPendingPromotion] = useState<{ from: Square; to: Square } | null>(null);
   const [savedMsg, setSavedMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const [dragFrom, setDragFrom] = useState<Square | null>(null);
+  const activeGame = externalGame ?? game;
+  const displayLastMove = externalLastMove !== undefined ? externalLastMove : lastMove;
+  const boardRef = useRef<HTMLDivElement>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<{ x: number; y: number; sq: Square } | null>(null);
 
   // Compute legal moves for the selected square on each render
   const legalMoves: Move[] = selectedSquare && !readOnly
-    ? game.moves({ square: selectedSquare, verbose: true })
+    ? activeGame.moves({ square: selectedSquare, verbose: true })
     : [];
 
   function getStatus(): string {
-    const turn = game.turn() === 'w' ? 'White' : 'Black';
-    if (game.isCheckmate()) {
-      const winner = game.turn() === 'w' ? 'Black' : 'White';
+    const turn = activeGame.turn() === 'w' ? 'White' : 'Black';
+    if (activeGame.isCheckmate()) {
+      const winner = activeGame.turn() === 'w' ? 'Black' : 'White';
       return `Checkmate! ${winner} wins!`;
     }
-    if (game.isStalemate()) return 'Stalemate — Draw!';
-    if (game.isThreefoldRepetition()) return 'Draw by repetition!';
-    if (game.isInsufficientMaterial()) return 'Draw — Insufficient material!';
-    if (game.isDraw()) return 'Draw!';
-    if (game.isCheck()) return `${turn} is in check!`;
+    if (activeGame.isStalemate()) return 'Stalemate — Draw!';
+    if (activeGame.isThreefoldRepetition()) return 'Draw by repetition!';
+    if (activeGame.isInsufficientMaterial()) return 'Draw — Insufficient material!';
+    if (activeGame.isDraw()) return 'Draw!';
+    if (activeGame.isCheck()) return `${turn} is in check!`;
     return `${turn} to move`;
   }
 
   function getResult(): string {
-    if (game.isCheckmate()) {
-      return game.turn() === 'w' ? 'black_wins' : 'white_wins';
+    if (activeGame.isCheckmate()) {
+      return activeGame.turn() === 'w' ? 'black_wins' : 'white_wins';
     }
-    if (game.isDraw() || game.isStalemate() || game.isThreefoldRepetition() || game.isInsufficientMaterial()) {
+    if (activeGame.isDraw() || activeGame.isStalemate() || activeGame.isThreefoldRepetition() || activeGame.isInsufficientMaterial()) {
       return 'draw';
     }
     return 'in_progress';
   }
 
   function doMove(from: Square, to: Square, promotion?: PieceSymbol) {
+    if (onMoveRequest) {
+      onMoveRequest(from, to, promotion);
+      setSelectedSquare(null);
+      setDragFrom(null);
+      return;
+    }
     const newGame = cloneGame(game);
     const move = newGame.move({ from, to, promotion });
     if (move) {
@@ -167,13 +186,36 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
     }
   }
 
-  function onSquareClick(sq: Square) {
-    if (pendingPromotion || readOnly) return;
+  function handlePromotion(type: PieceSymbol) {
+    if (pendingPromotion) {
+      doMove(pendingPromotion.from, pendingPromotion.to, type);
+      setPendingPromotion(null);
+    }
+  }
 
-    // If there's a selected piece and this square is a legal move target
+  const getSquareFromPoint = useCallback((clientX: number, clientY: number): Square | null => {
+    if (!boardRef.current) return null;
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const sqSize = rect.width / 8;
+    const col = Math.floor(x / sqSize);
+    const row = Math.floor(y / sqSize);
+    if (col < 0 || col > 7 || row < 0 || row > 7) return null;
+    const actualCol = flipped ? 7 - col : col;
+    const actualRow = flipped ? row : 7 - row;
+    return coordsToSquare(actualCol, actualRow);
+  }, [flipped]);
+
+  function handlePointerDown(e: React.PointerEvent) {
+    if (pendingPromotion || readOnly) return;
+    const sq = getSquareFromPoint(e.clientX, e.clientY);
+    if (!sq) return;
+
+    // If there's a selected piece and this square is a legal move target → execute move
     if (selectedSquare) {
-      const legalTarget = legalMoves.find(m => m.to === sq);
-      if (legalTarget) {
+      const target = legalMoves.find(m => m.to === sq);
+      if (target) {
         const isPromotion = legalMoves.some(m => m.to === sq && m.flags.includes('p'));
         if (isPromotion) {
           setPendingPromotion({ from: selectedSquare, to: sq });
@@ -184,20 +226,59 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
       }
     }
 
-    // Select a piece
-    const piece = game.get(sq);
-    if (piece && piece.color === game.turn()) {
+    // Select a piece of the current turn's color
+    const piece = activeGame.get(sq);
+    if (piece && piece.color === activeGame.turn()) {
       setSelectedSquare(sq);
+      dragStartRef.current = { x: e.clientX, y: e.clientY, sq };
+      boardRef.current?.setPointerCapture(e.pointerId);
     } else {
       setSelectedSquare(null);
     }
   }
 
-  function handlePromotion(type: PieceSymbol) {
-    if (pendingPromotion) {
-      doMove(pendingPromotion.from, pendingPromotion.to, type);
-      setPendingPromotion(null);
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!dragStartRef.current) return;
+    const dx = e.clientX - dragStartRef.current.x;
+    const dy = e.clientY - dragStartRef.current.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 5 && !dragFrom) {
+      setDragFrom(dragStartRef.current.sq);
     }
+
+    if (ghostRef.current && (dragFrom || dist > 5)) {
+      const sqSize = boardRef.current ? boardRef.current.getBoundingClientRect().width / 8 : 80;
+      ghostRef.current.style.left = `${e.clientX - sqSize / 2}px`;
+      ghostRef.current.style.top = `${e.clientY - sqSize / 2}px`;
+    }
+  }
+
+  function handlePointerUp(e: React.PointerEvent) {
+    try {
+      boardRef.current?.releasePointerCapture(e.pointerId);
+    } catch { /* ignore if not captured */ }
+
+    if (dragFrom) {
+      const targetSq = getSquareFromPoint(e.clientX, e.clientY);
+      if (targetSq && targetSq !== dragFrom) {
+        // Compute legal moves for the drag source
+        const moves = activeGame.moves({ square: dragFrom, verbose: true });
+        const target = moves.find(m => m.to === targetSq);
+        if (target) {
+          const isPromotion = moves.some(m => m.to === targetSq && m.flags.includes('p'));
+          if (isPromotion) {
+            setPendingPromotion({ from: dragFrom, to: targetSq });
+          } else {
+            doMove(dragFrom, targetSq);
+          }
+        }
+      }
+      setDragFrom(null);
+      setSelectedSquare(null);
+    }
+
+    dragStartRef.current = null;
   }
 
   function newGame() {
@@ -224,11 +305,11 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
 
   // Render
   const theme = THEMES[currentTheme];
-  const board = game.board();
-  const kingInCheck = game.isCheck();
+  const board = activeGame.board();
+  const kingInCheck = activeGame.isCheck();
   let kingSquare: Square | null = null;
   if (kingInCheck) {
-    const turn = game.turn();
+    const turn = activeGame.turn();
     for (let r = 0; r < 8; r++) {
       for (let c = 0; c < 8; c++) {
         const p = board[r][c];
@@ -239,15 +320,15 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
     }
   }
 
-  const blackCaptured = getCapturedPieces(game, 'b');
-  const whiteCaptured = getCapturedPieces(game, 'w');
+  const blackCaptured = getCapturedPieces(activeGame, 'b');
+  const whiteCaptured = getCapturedPieces(activeGame, 'w');
   const ranks = flipped ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
   const files = flipped ? ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'] : ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-  const moveCount = game.history().length;
+  const moveCount = activeGame.history().length;
 
   return (
-    <div className={styles.container}>
-      {!readOnly && (
+    <div className={`${styles.container}${className ? ` ${className}` : ''}`}>
+      {!readOnly && !hideControls && (
         <div className={styles.controls}>
           <button onClick={newGame}>New Game</button>
           <button onClick={undoMove}>Undo Move</button>
@@ -271,14 +352,18 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
         </div>
       )}
 
-      <div className={styles.status}>{getStatus()}</div>
-      {savedMsg && <div className={styles.savedMsg}>{savedMsg}</div>}
+      {!hideControls && (
+        <>
+          <div className={styles.status}>{getStatus()}</div>
+          {savedMsg && <div className={styles.savedMsg}>{savedMsg}</div>}
 
-      <div className={styles.capturedRow}>
-        {blackCaptured.map((t, i) => (
-          <span key={i} className={styles.blackPiece}>{PIECE_UNICODE['b' + t.toUpperCase()]}</span>
-        ))}
-      </div>
+          <div className={styles.capturedRow}>
+            {blackCaptured.map((t, i) => (
+              <span key={i} className={styles.capturedPiece}>{getPieceSvg('b', t)}</span>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className={styles.boardWrapper}>
         <div className={styles.rankLabels}>
@@ -288,7 +373,13 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
         </div>
         <div className={styles.boardAndFiles}>
           <div className={styles.boardContainer}>
-            <div className={styles.board}>
+            <div
+              className={styles.board}
+              ref={boardRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+            >
               {Array.from({ length: 64 }).map((_, idx) => {
                 const displayRow = Math.floor(idx / 8);
                 const displayCol = idx % 8;
@@ -306,27 +397,23 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
                   if (piece) classes.push(styles.legalCapture);
                   else classes.push(styles.legalMove);
                 }
-                if (lastMove) {
-                  if (sq === lastMove.from) classes.push(styles.lastMoveFrom);
-                  if (sq === lastMove.to) classes.push(styles.lastMoveTo);
+                if (displayLastMove) {
+                  if (sq === displayLastMove.from) classes.push(styles.lastMoveFrom);
+                  if (sq === displayLastMove.to) classes.push(styles.lastMoveTo);
                 }
                 if (kingSquare === sq) classes.push(styles.inCheck);
-
-                let pieceClass = '';
-                let symbol = '';
-                if (piece) {
-                  symbol = PIECE_UNICODE[getPieceKey(piece.color, piece.type)] || '';
-                  pieceClass = piece.color === 'w' ? styles.whitePiece : styles.blackPiece;
-                }
 
                 return (
                   <div
                     key={sq}
-                    className={[...classes, pieceClass].filter(Boolean).join(' ')}
+                    className={classes.join(' ')}
                     style={{ background: bgColor }}
-                    onClick={() => onSquareClick(sq)}
                   >
-                    {symbol}
+                    {piece && (
+                      <div className={`${styles.piece} ${dragFrom === sq ? styles.dragging : ''}`}>
+                        {getPieceSvg(piece.color, piece.type)}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -340,34 +427,41 @@ export default function ChessBoard({ readOnly = false, initialPgn }: Props) {
         </div>
       </div>
 
-      <div className={styles.capturedRow}>
-        {whiteCaptured.map((t, i) => (
-          <span key={i} className={styles.whitePiece}>{PIECE_UNICODE['w' + t.toUpperCase()]}</span>
-        ))}
-      </div>
+      {!hideControls && (
+        <div className={styles.capturedRow}>
+          {whiteCaptured.map((t, i) => (
+            <span key={i} className={styles.capturedPiece}>{getPieceSvg('w', t)}</span>
+          ))}
+        </div>
+      )}
 
       {pendingPromotion && (
         <div className={styles.promotionOverlay}>
           <div className={styles.promotionDialog}>
             <h3>Promote pawn to:</h3>
             <div className={styles.promotionPieces}>
-              {(['q', 'r', 'b', 'n'] as PieceSymbol[]).map(type => {
-                const color = game.turn();
-                const key = getPieceKey(color, type);
-                return (
-                  <div
-                    key={type}
-                    className={`${styles.promotionPiece} ${color === 'w' ? styles.whitePiece : styles.blackPiece}`}
-                    onClick={() => handlePromotion(type)}
-                  >
-                    {PIECE_UNICODE[key]}
-                  </div>
-                );
-              })}
+              {(['q', 'r', 'b', 'n'] as PieceSymbol[]).map(type => (
+                <div
+                  key={type}
+                  className={styles.promotionPiece}
+                  onClick={() => handlePromotion(type)}
+                >
+                  {getPieceSvg(activeGame.turn(), type)}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       )}
+
+      <div
+        ref={ghostRef}
+        className={styles.dragGhost}
+        style={{ display: dragFrom ? 'flex' : 'none' }}
+      >
+        {dragFrom && activeGame.get(dragFrom) &&
+          getPieceSvg(activeGame.get(dragFrom)!.color, activeGame.get(dragFrom)!.type)}
+      </div>
     </div>
   );
 }

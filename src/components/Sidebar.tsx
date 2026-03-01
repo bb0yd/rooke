@@ -40,7 +40,11 @@ export default function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
-            className={pathname === item.href ? styles.navItemActive : styles.navItem}
+            className={
+              pathname === item.href || pathname.startsWith(item.href + '/')
+                ? styles.navItemActive
+                : styles.navItem
+            }
           >
             <span className={styles.navIcon}>{item.icon}</span>
             {item.label}
