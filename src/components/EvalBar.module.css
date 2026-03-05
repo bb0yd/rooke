@@ -1,0 +1,45 @@
+.evalBar {
+  width: 28px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.blackSide {
+  background: #333;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 2px;
+  transition: height 0.3s ease;
+}
+
+.whiteSide {
+  background: #eee;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2px;
+  transition: height 0.3s ease;
+}
+
+.evalText {
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: monospace;
+  writing-mode: vertical-lr;
+  text-orientation: mixed;
+}
+
+.blackSide .evalText {
+  color: var(--text-primary);
+}
+
+.whiteSide .evalText {
+  color: #333;
+}

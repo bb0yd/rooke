@@ -1,0 +1,178 @@
+.page {
+  max-width: 800px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.loading {
+  color: var(--text-secondary);
+}
+
+.empty {
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 40px;
+}
+
+/* Stat cards grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardValue {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.cardLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cardWin {
+  color: var(--accent);
+}
+
+.cardLoss {
+  color: var(--danger);
+}
+
+.cardDraw {
+  color: var(--warning);
+}
+
+.cardAccent {
+  color: var(--accent);
+}
+
+/* Results section */
+.section {
+  margin-bottom: 32px;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+/* Result bar */
+.resultBar {
+  display: flex;
+  height: 32px;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.resultSegment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 30px;
+  transition: width 0.3s;
+}
+
+.resultSegmentWin {
+  background: var(--accent);
+  color: #fff;
+}
+
+.resultSegmentLoss {
+  background: var(--danger);
+  color: #fff;
+}
+
+.resultSegmentDraw {
+  background: var(--warning);
+  color: #1a1a2e;
+}
+
+.resultLegend {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legendDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legendWin { background: var(--accent); }
+.legendLoss { background: var(--danger); }
+.legendDraw { background: var(--warning); }
+
+/* Activity chart */
+.activityChart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 100px;
+  padding: 8px 0;
+}
+
+.activityBar {
+  flex: 1;
+  min-width: 8px;
+  background: var(--accent);
+  border-radius: 2px 2px 0 0;
+  opacity: 0.8;
+  transition: opacity 0.15s, height 0.3s;
+  position: relative;
+}
+
+.activityBar:hover {
+  opacity: 1;
+}
+
+.activityBar:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  white-space: nowrap;
+  z-index: 10;
+  border: 1px solid var(--border);
+}
+
+.noActivity {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+}

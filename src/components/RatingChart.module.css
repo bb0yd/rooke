@@ -1,0 +1,55 @@
+.container {
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 1rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.ratingInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.currentRating {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #4a9eff;
+  font-family: monospace;
+}
+
+.ratingUp {
+  font-size: 0.85rem;
+  color: #4caf50;
+  font-weight: 600;
+}
+
+.ratingDown {
+  font-size: 0.85rem;
+  color: #f44336;
+  font-weight: 600;
+}
+
+.canvas {
+  width: 100%;
+  display: block;
+  border-radius: 8px;
+  background: #1a1a2e;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 30px;
+}

@@ -1,0 +1,235 @@
+.page {
+  max-width: 620px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 28px;
+  letter-spacing: -0.3px;
+}
+
+.section {
+  margin-bottom: 28px;
+}
+
+.sectionTitle {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.option:hover {
+  background: var(--bg-hover);
+}
+
+.optionActive {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.radio {
+  accent-color: var(--accent);
+}
+
+.optionContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.optionLabel {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.optionDesc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.previewBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all var(--transition);
+}
+
+.previewBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Board theme selector */
+.themeOptions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.themeOption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.themeOption:hover {
+  background: var(--bg-hover);
+}
+
+.themeOptionActive {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.themePreview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 48px;
+  height: 48px;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.themeSquare {
+  width: 24px;
+  height: 24px;
+}
+
+.themeLabel {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* Toggle row */
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.toggleRow input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+
+.selectInput {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Form fields */
+.formGroup {
+  margin-bottom: 12px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.textInput {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.textInput:focus {
+  border-color: var(--accent);
+}
+
+.textArea {
+  width: 100%;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  transition: border-color var(--transition);
+}
+
+.textArea:focus {
+  border-color: var(--accent);
+}
+
+.saveBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background var(--transition);
+}
+
+.saveBtn:hover {
+  background: var(--accent-hover);
+}
+
+.msg {
+  font-size: 0.85rem;
+  color: var(--accent);
+  margin-left: 12px;
+}

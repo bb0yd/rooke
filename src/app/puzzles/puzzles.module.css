@@ -1,0 +1,290 @@
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+  width: calc(100vw - var(--sidebar-width) - 48px);
+  max-width: none;
+}
+
+.boardColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.puzzleBoard {
+  --sq: min((100vh - 100px) / 8, (100vw - 620px) / 8) !important;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.panelTop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.panelBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  flex-shrink: 0;
+}
+
+/* Header */
+.puzzleHeader {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.puzzleTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.puzzleMeta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.puzzleRating {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.puzzleThemes {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.theme {
+  font-size: 0.7rem;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+/* Feedback */
+.feedback {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.feedbackCorrect {
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--accent);
+}
+
+.feedbackIncorrect {
+  background: rgba(244, 67, 54, 0.15);
+  color: var(--danger);
+}
+
+.feedbackComplete {
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--accent);
+}
+
+/* Prompt */
+.prompt {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 8px 0;
+}
+
+.promptTurn {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Streak */
+.streakRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+}
+
+.streakValue {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.streakLabel {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Difficulty filter */
+.filterRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filterBtn {
+  font-size: 0.8rem;
+  padding: 5px 12px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.filterBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.filterBtnActive {
+  background: var(--accent-dim) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+/* Buttons */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.toolBtn {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s;
+  flex: 1;
+}
+
+.toolBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: #fff;
+}
+
+.toolBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.hintBtn {
+  border-color: #4a6a9a;
+  background: #2a3a5a;
+}
+
+.hintBtn:hover:not(:disabled) {
+  background: #3a4a6a;
+}
+
+.nextBtn {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+
+.nextBtn:hover {
+  opacity: 0.9;
+}
+
+/* Progress */
+.progressRow {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  justify-content: center;
+}
+
+.progressCorrect {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.progressWrong {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Rated toggle */
+.ratedToggle {
+  font-size: 0.8rem;
+  padding: 5px 12px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  margin-left: auto;
+}
+
+.ratedToggle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Rating display */
+.ratingDisplay {
+  text-align: center;
+  font-size: 1.05rem;
+  color: var(--accent);
+  padding: 8px 12px;
+  background: rgba(122, 179, 255, 0.08);
+  border: 1px solid rgba(122, 179, 255, 0.25);
+  border-radius: 8px;
+}
+
+.ratingDisplay strong {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Per-puzzle stats */
+.puzzleStats {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}

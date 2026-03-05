@@ -5,11 +5,24 @@ import { Chess, Square, PieceSymbol } from 'chess.js';
 import ChessBoard from './ChessBoard';
 import { getPieceSvg } from './ChessPieces';
 import { Opening } from '@/data/openings';
+import {
+  getLineStats,
+  recordAttempt,
+  updateSpacedRepetition,
+  isMastered,
+  isStruggling,
+  isDueForReview,
+  LineStats,
+} from '@/lib/trainerStats';
+import { calculateNextReview, performanceToQuality } from '@/lib/spacedRepetition';
+import { fireConfetti } from '@/lib/confetti';
 import styles from './OpeningTrainer.module.css';
 
 interface Props {
   opening: Opening;
 }
+
+type PracticeMode = 'sequential' | 'random' | 'weakspots' | 'review';
 
 function buildGameAtMove(moves: string[], upTo: number): Chess {
   const g = new Chess();
@@ -48,8 +61,72 @@ function describeMove(san: string, isPlayerMove: boolean): string {
     : `The opponent plays ${piece} to ${target}.`;
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const CORRECT_MESSAGES = [
+  'Great move!',
+  'Excellent! You got it.',
+  'Spot on!',
+  'Well played!',
+  'Nailed it!',
+  'Right on the money!',
+  'Sharp play!',
+];
+
+const CORRECT_WITH_SAN = [
+  (san: string) => `Perfect! ${san} is the mainline.`,
+  (san: string) => `Yes! ${san} is exactly right.`,
+  (san: string) => `${san} — textbook.`,
+];
+
+const INCORRECT_HINTS = [
+  'That move loses tempo.',
+  'The mainline develops faster.',
+  'Try to follow the theoretical move order.',
+  'Think about piece activity here.',
+  'Consider the center control.',
+  'Look for a more active continuation.',
+];
+
+function buildLineOrder(
+  mode: PracticeMode,
+  openingId: string,
+  lines: Opening['lines'],
+): number[] {
+  if (mode === 'sequential') {
+    return lines.map((_, i) => i);
+  }
+  if (mode === 'review') {
+    const due = lines
+      .map((ln, i) => ({ i, stats: getLineStats(openingId, ln.id) }))
+      .filter(({ stats }) => isDueForReview(stats))
+      .map(({ i }) => i);
+    if (due.length > 0) return shuffle(due);
+    // fall back to random-all
+  }
+  if (mode === 'weakspots') {
+    const struggling = lines
+      .map((ln, i) => ({ i, stats: getLineStats(openingId, ln.id) }))
+      .filter(({ stats }) => isStruggling(stats))
+      .map(({ i }) => i);
+    if (struggling.length > 0) return shuffle(struggling);
+    // fall back to random-all
+  }
+  return shuffle(lines.map((_, i) => i));
+}
+
 export default function OpeningTrainer({ opening }: Props) {
   const { playerColor, lines } = opening;
+  const [mode, setMode] = useState<PracticeMode>('sequential');
+  const [lineOrder, setLineOrder] = useState<number[]>(() => lines.map((_, i) => i));
+  const [orderPosition, setOrderPosition] = useState(0);
   const [currentLineIndex, setCurrentLineIndex] = useState(0);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [game, setGame] = useState<Chess>(() => new Chess());
@@ -57,13 +134,82 @@ export default function OpeningTrainer({ opening }: Props) {
   const [completedLines, setCompletedLines] = useState<Set<number>>(() => new Set());
   const [lastMove, setLastMove] = useState<{ from: string; to: string } | null>(null);
   const [hintText, setHintText] = useState<string | null>(null);
+  const [hintSquare, setHintSquare] = useState<string | null>(null);
   const [viewIndex, setViewIndex] = useState(0);
+  const [hadMistakeThisLine, setHadMistakeThisLine] = useState(false);
+  const [sessionClean, setSessionClean] = useState(0);
+  const [sessionMistakes, setSessionMistakes] = useState(0);
+  const [sessionDone, setSessionDone] = useState(false);
+  const [lineStatsMap, setLineStatsMap] = useState<Record<string, LineStats>>({});
+  const [wrongMoveSan, setWrongMoveSan] = useState<string | null>(null);
+  const [lineStartTime, setLineStartTime] = useState(Date.now());
+  const [correctStreak, setCorrectStreak] = useState(0);
+  const correctMsgIndexRef = useRef(0);
   const autoPlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [speedMode, setSpeedMode] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const speedAdvanceRef = useRef<() => void>(() => {});
 
   const line = lines[currentLineIndex];
   const isPlayerTurn = (currentMoveIndex % 2 === 0) === (playerColor === 'w');
   const isComplete = feedback === 'complete';
   const isViewing = viewIndex < currentMoveIndex;
+
+  // Load stats for all lines on mount and after recording
+  const refreshStats = useCallback(() => {
+    const map: Record<string, LineStats> = {};
+    for (const ln of lines) {
+      map[ln.id] = getLineStats(opening.id, ln.id);
+    }
+    setLineStatsMap(map);
+  }, [lines, opening.id]);
+
+  useEffect(() => {
+    refreshStats();
+  }, [refreshStats]);
+
+  // Speed mode countdown timer
+  useEffect(() => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+    if (!speedMode || isComplete || isViewing) return;
+
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          // Time's up — mark as failed and advance
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          countdownRef.current = null;
+          setHadMistakeThisLine(true);
+          setFeedback('complete');
+          setCompletedLines(s => {
+            const next = new Set(s);
+            next.add(currentLineIndex);
+            return next;
+          });
+          speedAdvanceRef.current();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current);
+        countdownRef.current = null;
+      }
+    };
+  }, [speedMode, isComplete, isViewing, currentLineIndex, currentMoveIndex]);
+  // Note: intentionally limited deps — we restart on line/move changes and pause/resume on isViewing
+
+  // Reset countdown when a new line starts
+  useEffect(() => {
+    if (speedMode) setCountdown(30);
+  }, [currentLineIndex, speedMode]);
 
   // Build the game state at viewIndex for when user navigates back
   const viewGame = useMemo(() => {
@@ -109,6 +255,7 @@ export default function OpeningTrainer({ opening }: Props) {
             next.add(currentLineIndex);
             return next;
           });
+          fireConfetti();
         } else {
           const nextIsOpponent = ((nextIdx) % 2 === 0) !== (playerColor === 'w');
           if (nextIsOpponent) {
@@ -131,6 +278,11 @@ export default function OpeningTrainer({ opening }: Props) {
     setFeedback(null);
     setLastMove(null);
     setHintText(null);
+    setHintSquare(null);
+    setHadMistakeThisLine(false);
+    setWrongMoveSan(null);
+    setLineStartTime(Date.now());
+    setCorrectStreak(0);
 
     if (playerColor === 'b') {
       autoPlayTimer.current = setTimeout(() => {
@@ -154,6 +306,42 @@ export default function OpeningTrainer({ opening }: Props) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Record stats and advance when line completes
+  const onLineComplete = useCallback((hadMistake: boolean) => {
+    recordAttempt(opening.id, line.id, hadMistake);
+
+    // Spaced repetition scheduling
+    const stats = getLineStats(opening.id, line.id);
+    const timeMs = Date.now() - lineStartTime;
+    const quality = performanceToQuality(hadMistake, timeMs);
+    const result = calculateNextReview(quality, stats.easeFactor, stats.intervalDays);
+    updateSpacedRepetition(opening.id, line.id, result.easeFactor, result.intervalDays, result.nextReview);
+
+    refreshStats();
+    if (hadMistake) {
+      setSessionMistakes(n => n + 1);
+    } else {
+      setSessionClean(n => n + 1);
+    }
+  }, [opening.id, line.id, refreshStats, lineStartTime]);
+
+  // Advance to the next line in lineOrder
+  const advanceToNext = useCallback(() => {
+    const nextPos = orderPosition + 1;
+    if (nextPos >= lineOrder.length) {
+      setSessionDone(true);
+      return;
+    }
+    setOrderPosition(nextPos);
+    initLine(lineOrder[nextPos]);
+  }, [orderPosition, lineOrder, initLine]);
+
+  // Keep ref current for speed mode timeout callback
+  speedAdvanceRef.current = () => {
+    onLineComplete(true);
+    setTimeout(advanceToNext, 1200);
+  };
+
   const handleMoveRequest = useCallback((from: Square, to: Square, promotion?: PieceSymbol) => {
     if (isComplete || isViewing) return;
     if (!isPlayerTurn) return;
@@ -168,9 +356,12 @@ export default function OpeningTrainer({ opening }: Props) {
       setGame(newGame);
       setLastMove({ from: move.from, to: move.to });
       setHintText(null);
+      setHintSquare(null);
       const nextIdx = currentMoveIndex + 1;
       setCurrentMoveIndex(nextIdx);
       setViewIndex(nextIdx);
+
+      setCorrectStreak(prev => prev + 1);
 
       if (nextIdx >= line.moves.length) {
         setFeedback('complete');
@@ -179,19 +370,32 @@ export default function OpeningTrainer({ opening }: Props) {
           next.add(currentLineIndex);
           return next;
         });
+        onLineComplete(hadMistakeThisLine);
+        fireConfetti();
       } else {
         setFeedback('correct');
         autoPlayOpponent(newGame, nextIdx, line);
       }
     } else {
       setFeedback('incorrect');
+      setWrongMoveSan(move.san);
+      setHadMistakeThisLine(true);
+      setCorrectStreak(0);
     }
-  }, [game, currentMoveIndex, line, isComplete, isPlayerTurn, isViewing, autoPlayOpponent, currentLineIndex]);
+  }, [game, currentMoveIndex, line, isComplete, isPlayerTurn, isViewing, autoPlayOpponent, currentLineIndex, hadMistakeThisLine, onLineComplete]);
 
   function showHint() {
     const san = line.moves[currentMoveIndex];
     const isPlayer = (currentMoveIndex % 2 === 0) === (playerColor === 'w');
     setHintText(describeMove(san, isPlayer));
+    setHadMistakeThisLine(true); // using a hint counts as not clean
+
+    // Highlight the source square of the expected move
+    const testGame = buildGameAtMove(line.moves, currentMoveIndex);
+    const move = testGame.move(san);
+    if (move) {
+      setHintSquare(move.from);
+    }
   }
 
   function goBack() {
@@ -208,19 +412,56 @@ export default function OpeningTrainer({ opening }: Props) {
     }
   }
 
+  // Switch practice mode
+  function switchMode(newMode: PracticeMode) {
+    const order = buildLineOrder(newMode, opening.id, lines);
+    setMode(newMode);
+    setLineOrder(order);
+    setOrderPosition(0);
+    setCompletedLines(new Set());
+    setSessionClean(0);
+    setSessionMistakes(0);
+    setSessionDone(false);
+    initLine(order[0]);
+  }
+
+  // Restart session with same mode
+  function restartSession() {
+    switchMode(mode);
+  }
+
   const progressPct = lines.length > 0 ? (completedLines.size / lines.length) * 100 : 0;
 
   // Coach bubble message
   let coachMessage: string | null = null;
   let bubbleStyle = '';
   if (feedback === 'incorrect') {
-    coachMessage = 'Not quite — try again!';
+    const expected = line.moves[currentMoveIndex];
+    const hint = INCORRECT_HINTS[Math.floor(Math.random() * INCORRECT_HINTS.length)];
+    coachMessage = wrongMoveSan
+      ? `You played: ${wrongMoveSan} | Expected: ${expected}. ${hint}`
+      : `Not quite — try again! ${hint}`;
     bubbleStyle = styles.bubbleIncorrect;
   } else if (feedback === 'complete') {
-    coachMessage = 'Line complete! Well done.';
+    coachMessage = hadMistakeThisLine
+      ? 'Line complete. Keep practicing to clean it up.'
+      : 'Flawless! You nailed every move.';
     bubbleStyle = styles.bubbleComplete;
   } else if (feedback === 'correct') {
-    coachMessage = 'Correct!';
+    // Rotate through varied correct messages
+    const useSanVariant = correctMsgIndexRef.current % 3 === 0;
+    if (useSanVariant && currentMoveIndex > 0) {
+      const lastPlayedSan = line.moves[currentMoveIndex - 1];
+      const sanFn = CORRECT_WITH_SAN[correctMsgIndexRef.current % CORRECT_WITH_SAN.length];
+      coachMessage = sanFn(lastPlayedSan);
+    } else {
+      coachMessage = CORRECT_MESSAGES[correctMsgIndexRef.current % CORRECT_MESSAGES.length];
+    }
+    correctMsgIndexRef.current += 1;
+    // Append streak indicator for 3+ correct in a row
+    if (correctStreak >= 3) {
+      coachMessage += ` \uD83D\uDD25 ${correctStreak} in a row!`;
+    }
     bubbleStyle = styles.bubbleCorrect;
   } else if (hintText) {
     coachMessage = hintText;
@@ -234,16 +475,8 @@ export default function OpeningTrainer({ opening }: Props) {
       : describeMove(san, isPlayer);
   }
 
-  // Build move display
-  const moveDisplay: React.ReactNode[] = [];
-  for (let i = 0; i < line.moves.length; i++) {
-    if (i % 2 === 0) {
-      moveDisplay.push(
-        <span key={`num-${i}`} className={styles.moveNumber}>
-          {Math.floor(i / 2) + 1}.
-        </span>
-      );
-    }
+  // Build move display as rows: [number, white, black]
+  function getMoveClass(i: number): string {
     let cls = styles.move;
     if (i < currentMoveIndex) {
       cls += ` ${styles.movePlayed}`;
@@ -253,15 +486,89 @@ export default function OpeningTrainer({ opening }: Props) {
     } else {
       cls += ` ${styles.moveFuture}`;
     }
+    return cls;
+  }
 
-    moveDisplay.push(
-      <span
-        key={`move-${i}`}
-        className={cls}
-        onClick={() => i < currentMoveIndex && jumpToMove(i + 1)}
-      >
-        {i < currentMoveIndex ? line.moves[i] : i === currentMoveIndex ? '???' : '...'}
-      </span>
+  function getMoveText(i: number): string {
+    if (i < currentMoveIndex) return line.moves[i];
+    if (i === currentMoveIndex) return '???';
+    return '\u2026';
+  }
+
+  // Only show rows up through the current move (the "???" prompt), not future moves
+  const showUpTo = isComplete ? line.moves.length : currentMoveIndex + 1;
+  const moveRows: React.ReactNode[] = [];
+  for (let i = 0; i < showUpTo; i += 2) {
+    const whiteIdx = i;
+    const blackIdx = i + 1;
+    moveRows.push(
+      <div key={`row-${i}`} className={styles.moveRow}>
+        <span className={styles.moveNumber}>{Math.floor(i / 2) + 1}.</span>
+        <span
+          className={getMoveClass(whiteIdx)}
+          onClick={() => whiteIdx < currentMoveIndex && jumpToMove(whiteIdx + 1)}
+        >
+          {getMoveText(whiteIdx)}
+        </span>
+        {blackIdx < showUpTo ? (
+          <span
+            className={getMoveClass(blackIdx)}
+            onClick={() => blackIdx < currentMoveIndex && jumpToMove(blackIdx + 1)}
+          >
+            {getMoveText(blackIdx)}
+          </span>
+        ) : <span />}
+      </div>
+    );
+  }
+
+  // Determine line status dot for each line
+  function getLineDot(lineId: string): 'mastered' | 'struggling' | null {
+    const s = lineStatsMap[lineId];
+    if (!s || s.attempts === 0) return null;
+    if (isMastered(s)) return 'mastered';
+    if (isStruggling(s)) return 'struggling';
+    return null;
+  }
+
+  // Count struggling lines for weak spots button label
+  const strugglingCount = lines.filter(ln => {
+    const s = lineStatsMap[ln.id];
+    return s && isStruggling(s);
+  }).length;
+
+  if (sessionDone) {
+    const totalDone = sessionClean + sessionMistakes;
+    return (
+      <div className={styles.layout}>
+        <div className={styles.summaryPanel}>
+          <h2 className={styles.summaryTitle}>Session Complete</h2>
+          <div className={styles.summaryStats}>
+            <div className={styles.summaryStat}>
+              <span className={styles.summaryStatNumber}>{totalDone}</span>
+              <span className={styles.summaryStatLabel}>Lines completed</span>
+            </div>
+            <div className={styles.summaryStat}>
+              <span className={`${styles.summaryStatNumber} ${styles.summaryClean}`}>{sessionClean}</span>
+              <span className={styles.summaryStatLabel}>Clean</span>
+            </div>
+            <div className={styles.summaryStat}>
+              <span className={`${styles.summaryStatNumber} ${styles.summaryMistakes}`}>{sessionMistakes}</span>
+              <span className={styles.summaryStatLabel}>Had mistakes</span>
+            </div>
+          </div>
+          <div className={styles.summaryButtons}>
+            {strugglingCount > 0 && (
+              <button onClick={() => switchMode('weakspots')}>
+                Practice weak spots ({strugglingCount})
+              </button>
+            )}
+            <button onClick={restartSession}>
+              Restart full set
+            </button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -275,89 +582,150 @@ export default function OpeningTrainer({ opening }: Props) {
           hideControls
           initialFlipped={playerColor === 'b'}
           externalLastMove={viewLastMove}
+          hintSquare={hintSquare}
           readOnly={!isPlayerTurn || isComplete || isViewing}
         />
-        <div className={styles.toolbar}>
-          <button
-            className={`${styles.toolBtn} ${styles.hintToolBtn}`}
-            onClick={showHint}
-            disabled={isComplete || isViewing || !isPlayerTurn}
-            title="Show hint"
-          >
-            Hint
-          </button>
-          <div className={styles.toolSpacer} />
-          <button
-            className={styles.toolBtn}
-            onClick={goBack}
-            disabled={viewIndex === 0}
-            title="Previous move"
-          >
-            &#x25C0;
-          </button>
-          <button
-            className={styles.toolBtn}
-            onClick={goForward}
-            disabled={viewIndex >= currentMoveIndex}
-            title="Next move"
-          >
-            &#x25B6;
-          </button>
-        </div>
       </div>
 
       <div className={styles.panel}>
-        <div className={styles.panelHeader}>
-          <span className={styles.openingName}>{opening.name}</span>
-          <span className={styles.lineName}>{line.name}</span>
-        </div>
-
-        {coachMessage && (
-          <div className={styles.coachBubble}>
-            <span className={styles.coachIcon}>
-              {getPieceSvg(playerColor, 'k')}
-            </span>
-            <div className={`${styles.bubble} ${bubbleStyle}`}>
-              {coachMessage}
-            </div>
+        <div className={styles.panelTop}>
+          <div className={styles.panelHeader}>
+            <span className={styles.openingName}>{opening.name}</span>
+            <span className={styles.lineName}>{line.name}</span>
           </div>
-        )}
 
-        <div className={styles.lineSelector}>
-          {lines.map((ln, idx) => (
+          <div className={styles.modeSelector}>
             <button
-              key={ln.id}
-              className={`${styles.lineBtn} ${idx === currentLineIndex ? styles.lineBtnActive : ''} ${completedLines.has(idx) ? styles.lineBtnComplete : ''}`}
-              onClick={() => initLine(idx)}
+              className={`${styles.modeBtn} ${mode === 'sequential' ? styles.modeBtnActive : ''}`}
+              onClick={() => switchMode('sequential')}
             >
-              {ln.name}
+              Sequential
             </button>
-          ))}
-        </div>
-
-        <div className={styles.moveList}>
-          {moveDisplay}
-        </div>
-
-        {isComplete && (
-          <div className={styles.buttons}>
-            <button onClick={() => initLine(currentLineIndex)}>
-              Practice again
+            <button
+              className={`${styles.modeBtn} ${mode === 'random' ? styles.modeBtnActive : ''}`}
+              onClick={() => switchMode('random')}
+            >
+              Random
             </button>
-            {currentLineIndex < lines.length - 1 && (
-              <button onClick={() => initLine(currentLineIndex + 1)}>
+            <button
+              className={`${styles.modeBtn} ${mode === 'weakspots' ? styles.modeBtnActive : ''}`}
+              onClick={() => switchMode('weakspots')}
+            >
+              Weak Spots{strugglingCount > 0 ? ` (${strugglingCount})` : ''}
+            </button>
+            <button
+              className={`${styles.modeBtn} ${mode === 'review' ? styles.modeBtnActive : ''}`}
+              onClick={() => switchMode('review')}
+            >
+              Review Due
+            </button>
+            <button
+              className={`${styles.speedModeBtn} ${speedMode ? styles.speedModeBtnActive : ''}`}
+              onClick={() => {
+                setSpeedMode(s => !s);
+                if (!speedMode) setCountdown(30);
+              }}
+              title="Timed drills — 30 seconds per line"
+            >
+              Speed Mode
+            </button>
+          </div>
+
+          {coachMessage && (
+            <div className={styles.coachBubble}>
+              <span className={styles.coachIcon}>
+                {getPieceSvg(playerColor, 'k')}
+              </span>
+              <div className={`${styles.bubble} ${bubbleStyle}`}>
+                {coachMessage}
+              </div>
+            </div>
+          )}
+
+          {speedMode && (
+            <div className={`${styles.timerDisplay} ${
+              countdown > 15 ? styles.timerGreen :
+              countdown > 5 ? styles.timerYellow :
+              styles.timerRed
+            }`}>
+              {countdown}s
+            </div>
+          )}
+
+          <div className={styles.lineSelector}>
+            {lines.map((ln, idx) => {
+              const dot = getLineDot(ln.id);
+              return (
+                <button
+                  key={ln.id}
+                  className={`${styles.lineBtn} ${idx === currentLineIndex ? styles.lineBtnActive : ''} ${completedLines.has(idx) ? styles.lineBtnComplete : ''}`}
+                  onClick={() => {
+                    const pos = lineOrder.indexOf(idx);
+                    if (pos !== -1) setOrderPosition(pos);
+                    initLine(idx);
+                  }}
+                >
+                  {dot && (
+                    <span className={`${styles.lineDot} ${dot === 'mastered' ? styles.lineDotMastered : styles.lineDotStruggling}`} />
+                  )}
+                  {ln.name}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className={styles.moveList}>
+            {moveRows}
+          </div>
+
+          {isComplete && (
+            <div className={styles.buttons}>
+              <button onClick={() => initLine(currentLineIndex)}>
+                Practice again
+              </button>
+              <button onClick={advanceToNext}>
                 Next line &rarr;
               </button>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        <div className={styles.progressSection}>
-          <span className={styles.progressLabel}>
-            {completedLines.size} / {lines.length} lines completed
-          </span>
-          <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
+        <div className={styles.panelBottom}>
+          <div className={styles.toolbar}>
+            <button
+              className={`${styles.toolBtn} ${styles.hintToolBtn}`}
+              onClick={showHint}
+              disabled={isComplete || isViewing || !isPlayerTurn}
+              title="Show hint"
+            >
+              Hint
+            </button>
+            <div className={styles.toolSpacer} />
+            <button
+              className={styles.toolBtn}
+              onClick={goBack}
+              disabled={viewIndex === 0}
+              title="Previous move"
+            >
+              &#x25C0;
+            </button>
+            <button
+              className={styles.toolBtn}
+              onClick={goForward}
+              disabled={viewIndex >= currentMoveIndex}
+              title="Next move"
+            >
+              &#x25B6;
+            </button>
+          </div>
+
+          <div className={styles.progressSection}>
+            <span className={styles.progressLabel}>
+              {completedLines.size} / {lineOrder.length} lines this session
+            </span>
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{ width: `${progressPct}%` }} />
+            </div>
           </div>
         </div>
       </div>

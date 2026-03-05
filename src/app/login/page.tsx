@@ -39,7 +39,9 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Chess Trainer</h1>
+        <div className="auth-logo">
+          <img src="/logo-full.svg" alt="Rooke" />
+        </div>
         <h2>Log In</h2>
         <form onSubmit={handleSubmit}>
           <input

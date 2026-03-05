@@ -10,8 +10,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
-    if (username.length < 3 || password.length < 4) {
-      return NextResponse.json({ error: 'Username must be 3+ chars, password 4+ chars' }, { status: 400 });
+    if (username.length < 3) {
+      return NextResponse.json({ error: 'Username must be 3+ characters' }, { status: 400 });
+    }
+
+    if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return NextResponse.json({ error: 'Password must be 8+ chars with at least 1 letter and 1 number' }, { status: 400 });
     }
 
     const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
@@ -29,7 +33,7 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({ success: true, username });
     response.cookies.set('token', token, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
       path: '/',

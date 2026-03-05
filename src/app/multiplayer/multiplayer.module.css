@@ -1,0 +1,327 @@
+.page {
+  max-width: 720px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  letter-spacing: -0.3px;
+}
+
+.loading {
+  color: var(--text-secondary);
+}
+
+/* Sections */
+.section {
+  margin-bottom: 28px;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+/* Challenge form */
+.challengeForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.formRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.formLabel {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  width: 70px;
+  flex-shrink: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.searchInput {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+}
+
+.userList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.userItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.userItem:hover {
+  border-color: var(--accent);
+}
+
+.userItemSelected {
+  border-color: var(--accent) !important;
+  background: var(--accent-dim);
+}
+
+.colorOptions {
+  display: flex;
+  gap: 6px;
+}
+
+.colorBtn {
+  padding: 7px 14px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: all var(--transition);
+}
+
+.colorBtn:hover {
+  border-color: var(--border-light);
+}
+
+.colorBtnActive {
+  border-color: var(--accent) !important;
+  background: var(--accent-dim);
+}
+
+.sendBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 11px;
+  border-radius: var(--radius);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.sendBtn:hover {
+  background: var(--accent-hover);
+}
+
+.sendBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Challenge cards */
+.challengeList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.challengeCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: background var(--transition);
+}
+
+.challengeCard:hover {
+  background: var(--bg-hover);
+}
+
+.challengeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.challengeUser {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.challengeDetail {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.challengeActions {
+  display: flex;
+  gap: 6px;
+}
+
+.acceptBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: background var(--transition);
+}
+
+.acceptBtn:hover {
+  background: var(--accent-hover);
+}
+
+.declineBtn {
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all var(--transition);
+}
+
+.declineBtn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.cancelBtn {
+  background: none;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all var(--transition);
+}
+
+.cancelBtn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Game list */
+.gameList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gameCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.gameCard:hover {
+  border-color: var(--accent);
+  background: var(--bg-hover);
+  text-decoration: none;
+}
+
+.gameCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gameCardPlayers {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.gameCardStatus {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.gameCardStatusActive {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.gameCardStatusDone {
+  color: var(--text-muted);
+}
+
+.playBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background var(--transition);
+}
+
+.playBtn:hover {
+  background: var(--accent-hover);
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+
+.msg {
+  font-size: 0.85rem;
+  padding: 6px 0;
+}
+
+.msgSuccess {
+  color: var(--accent);
+}
+
+.msgError {
+  color: var(--danger);
+}

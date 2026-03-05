@@ -12,86 +12,195 @@
 }
 
 .logo {
-  padding: 20px 16px;
-  font-size: 1.3rem;
-  font-weight: 700;
+  padding: 16px;
   border-bottom: 1px solid var(--border);
-  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.logoIcon {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
+.logoText {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--text-primary);
+  text-transform: uppercase;
 }
 
 .nav {
   flex: 1;
-  padding: 8px 0;
+  padding: 12px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  overflow-y: auto;
 }
 
 .navItem {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
+  padding: 10px 14px;
   color: var(--text-secondary);
   text-decoration: none;
-  font-size: 0.95rem;
-  transition: background 0.15s, color 0.15s;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background var(--transition), color var(--transition);
   border: none;
   background: none;
   cursor: pointer;
   width: 100%;
   text-align: left;
+  border-radius: var(--radius);
 }
 
 .navItem:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-hover);
   color: var(--text-primary);
   text-decoration: none;
 }
 
 .navItemActive {
   composes: navItem;
-  background: rgba(74, 158, 255, 0.1);
+  background: var(--accent-dim);
   color: var(--accent);
-  border-right: 3px solid var(--accent);
+  font-weight: 600;
 }
 
 .navIcon {
   width: 20px;
   text-align: center;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 9px;
+  padding: 0 5px;
 }
 
 .divider {
   height: 1px;
   background: var(--border);
-  margin: 8px 16px;
+  margin: 4px 14px;
 }
 
 .userSection {
-  padding: 16px;
+  padding: 14px 16px;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 }
 
 .username {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: color var(--transition), background var(--transition);
+  text-decoration: none;
+}
+
+.gearBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
 }
 
 .logoutBtn {
   background: none;
   border: 1px solid var(--border);
-  color: var(--text-secondary);
-  padding: 4px 10px;
-  border-radius: 4px;
+  color: var(--text-muted);
+  padding: 5px 12px;
+  border-radius: var(--radius);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: all var(--transition);
 }
 
 .logoutBtn:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(224, 85, 85, 0.1);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Hamburger button - hidden on desktop */
+.hamburger {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 60;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
   color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: var(--shadow);
+}
+
+/* Mobile overlay backdrop */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 45;
+}
+
+.overlayVisible {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 55;
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
 }

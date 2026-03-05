@@ -1,21 +1,25 @@
 .layout {
   display: flex;
   gap: 24px;
-  align-items: flex-start;
+  align-items: stretch;
   height: calc(100vh - 80px);
   overflow: hidden;
+  /* Break out of the 900px max-width wrapper */
+  width: calc(100vw - var(--sidebar-width) - 48px);
+  max-width: none;
 }
 
 .boardColumn {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  justify-content: center;
   flex-shrink: 0;
 }
 
 .trainerBoard {
-  --sq: min((100vh - 180px) / 8, (100vw - 680px) / 8, 85px) !important;
+  /* sidebar=220  padding=48  gap=24  panel=320 → reserve ~612px from vw */
+  --sq: min((100vh - 100px) / 8, (100vw - 620px) / 8) !important;
 }
 
 .toolbar {
@@ -28,9 +32,9 @@
 }
 
 .toolBtn {
-  background: #2a2a4a;
-  color: #ccc;
-  border: 1px solid #444;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
   width: 40px;
   height: 36px;
   border-radius: 6px;
@@ -43,7 +47,7 @@
 }
 
 .toolBtn:hover:not(:disabled) {
-  background: #3a3a5a;
+  background: var(--bg-hover);
   color: #fff;
 }
 
@@ -57,12 +61,12 @@
   padding: 0 14px;
   gap: 6px;
   font-size: 0.9rem;
-  border-color: #4a6a9a;
-  background: #2a3a5a;
+  border-color: var(--info);
+  background: rgba(91, 163, 207, 0.15);
 }
 
 .hintToolBtn:hover:not(:disabled) {
-  background: #3a4a6a;
+  background: rgba(91, 163, 207, 0.25);
 }
 
 .toolSpacer {
@@ -72,12 +76,25 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.panelTop {
   flex: 1;
-  min-width: 240px;
-  max-width: 340px;
-  max-height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   overflow-y: auto;
+  min-height: 0;
+}
+
+.panelBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 14px;
+  flex-shrink: 0;
 }
 
 .panelHeader {
@@ -93,7 +110,7 @@
 
 .lineName {
   font-size: 0.9rem;
-  color: #aaa;
+  color: var(--text-secondary);
 }
 
 .coachBubble {
@@ -116,8 +133,8 @@
 }
 
 .bubble {
-  background: #e8e8e8;
-  color: #1a1a1a;
+  background: var(--bg-card);
+  color: var(--text-primary);
   padding: 10px 14px;
   border-radius: 10px;
   font-size: 0.9rem;
@@ -127,59 +144,68 @@
 
 .bubbleCorrect {
   background: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
+  color: var(--accent);
 }
 
 .bubbleIncorrect {
   background: rgba(244, 67, 54, 0.15);
-  color: #f44336;
+  color: var(--danger);
 }
 
 .bubbleComplete {
   background: rgba(76, 175, 80, 0.15);
-  color: #4caf50;
+  color: var(--accent);
 }
 
 .moveList {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 8px;
+  flex-direction: column;
+  gap: 2px;
   font-family: monospace;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.moveRow {
+  display: grid;
+  grid-template-columns: 3ch 1fr 1fr;
+  gap: 4px;
+  align-items: center;
 }
 
 .moveNumber {
-  color: #777;
-  min-width: 2ch;
+  color: var(--text-muted);
+  text-align: right;
+  padding-right: 4px;
+  font-size: 0.8rem;
 }
 
 .move {
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: 4px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .move:hover {
-  background: #333;
+  background: var(--bg-hover);
 }
 
 .movePlayed {
-  color: #4caf50;
+  color: var(--accent);
 }
 
 .moveViewing {
-  background: #3a3a5a;
-  outline: 1px solid #7ab3ff;
+  background: var(--bg-hover);
+  outline: 1px solid var(--accent);
 }
 
 .moveCurrent {
-  background: #3a3a5a;
+  background: var(--bg-hover);
   font-weight: 700;
 }
 
 .moveFuture {
-  color: #666;
+  color: var(--text-muted);
   cursor: default;
 }
 
@@ -194,9 +220,9 @@
 }
 
 .buttons button {
-  background: #2a2a4a;
-  color: #eee;
-  border: 1px solid #444;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   padding: 8px 16px;
   border-radius: 6px;
   cursor: pointer;
@@ -205,7 +231,7 @@
 }
 
 .buttons button:hover {
-  background: #3a3a5a;
+  background: var(--bg-hover);
 }
 
 .progressSection {
@@ -216,51 +242,247 @@
 
 .progressLabel {
   font-size: 0.85rem;
-  color: #999;
+  color: var(--text-muted);
 }
 
 .progressBar {
   width: 100%;
   height: 6px;
-  background: #333;
+  background: var(--border);
   border-radius: 3px;
   overflow: hidden;
 }
 
 .progressFill {
   height: 100%;
-  background: #4caf50;
+  background: var(--accent);
   border-radius: 3px;
   transition: width 0.3s;
 }
 
 .lineSelector {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: min-content;
   gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.lineSelector::-webkit-scrollbar {
+  width: 5px;
+}
+
+.lineSelector::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.lineSelector::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.lineSelector::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .lineBtn {
-  font-size: 0.8rem !important;
-  padding: 4px 10px !important;
-  background: #2a2a4a;
-  color: #eee;
-  border: 1px solid #444;
+  font-size: 0.75rem !important;
+  padding: 6px 8px !important;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.2s;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lineBtn:hover {
-  background: #3a3a5a;
+  background: var(--bg-hover);
 }
 
 .lineBtnActive {
-  background: #3a3a6a !important;
-  border-color: #7ab3ff !important;
+  background: var(--accent-dim) !important;
+  border-color: var(--accent) !important;
 }
 
 .lineBtnComplete {
-  border-color: #4caf50 !important;
-  color: #4caf50;
+  border-color: var(--accent) !important;
+  color: var(--accent);
+}
+
+/* Mode selector */
+.modeSelector {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.modeBtn {
+  font-size: 0.8rem !important;
+  padding: 5px 12px !important;
+  background: var(--bg-card);
+  color: #aaa;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.modeBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.modeBtnActive {
+  background: var(--accent-dim) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+/* Speed Mode toggle button */
+.speedModeBtn {
+  font-size: 0.8rem !important;
+  padding: 5px 12px !important;
+  background: var(--bg-card);
+  color: #aaa;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.speedModeBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.speedModeBtnActive {
+  background: rgba(224, 85, 85, 0.15) !important;
+  border-color: var(--danger) !important;
+  color: var(--danger) !important;
+}
+
+/* Timer display */
+.timerDisplay {
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 0;
+  letter-spacing: 1px;
+  transition: color 0.3s;
+}
+
+.timerGreen {
+  color: var(--accent);
+}
+
+.timerYellow {
+  color: #ffb300;
+}
+
+.timerRed {
+  color: var(--danger);
+  animation: timerPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes timerPulse {
+  from { opacity: 1; }
+  to { opacity: 0.6; }
+}
+
+/* Per-line status dots */
+.lineDot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  flex-shrink: 0;
+}
+
+.lineDotMastered {
+  background: var(--accent);
+}
+
+.lineDotStruggling {
+  background: var(--danger);
+}
+
+/* Session summary */
+.summaryPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 420px;
+  margin: 60px auto;
+  text-align: center;
+}
+
+.summaryTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.summaryStats {
+  display: flex;
+  gap: 32px;
+}
+
+.summaryStat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.summaryStatNumber {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.summaryClean {
+  color: var(--accent);
+}
+
+.summaryMistakes {
+  color: var(--danger);
+}
+
+.summaryStatLabel {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.summaryButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.summaryButtons button {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.summaryButtons button:hover {
+  background: var(--bg-hover);
 }

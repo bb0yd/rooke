@@ -39,8 +39,10 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <h1>Chess Trainer</h1>
-        <h2>Register</h2>
+        <div className="auth-logo">
+          <img src="/logo-full.svg" alt="Rooke" />
+        </div>
+        <h2>Create Account</h2>
         <form onSubmit={handleSubmit}>
           <input
             type="text"

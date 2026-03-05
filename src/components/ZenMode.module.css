@@ -1,0 +1,37 @@
+.zenContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #0a0a1a;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.exitBtn {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #888;
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  z-index: 1001;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.zenContainer:hover .exitBtn {
+  opacity: 1;
+}
+
+.exitBtn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-secondary);
+}

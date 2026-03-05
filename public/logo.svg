@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="rookGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#95c960"/>
+      <stop offset="100%" stop-color="#81b64c"/>
+    </linearGradient>
+  </defs>
+
+  <g>
+    <!-- Base platform -->
+    <rect x="10" y="38" width="28" height="4" rx="1.5" fill="url(#rookGrad)"/>
+
+    <!-- Lower body taper -->
+    <path d="M13 38 L14 30 L34 30 L35 38 Z" fill="url(#rookGrad)"/>
+
+    <!-- Main tower body -->
+    <rect x="14" y="16" width="20" height="14" rx="1" fill="url(#rookGrad)"/>
+
+    <!-- Neck/rim below battlements -->
+    <rect x="12" y="14" width="24" height="3" rx="1" fill="url(#rookGrad)"/>
+
+    <!-- Battlements (crenellations) - 3 merlons -->
+    <rect x="12" y="6" width="5" height="8" rx="0.8" fill="url(#rookGrad)"/>
+    <rect x="21.5" y="6" width="5" height="8" rx="0.8" fill="url(#rookGrad)"/>
+    <rect x="31" y="6" width="5" height="8" rx="0.8" fill="url(#rookGrad)"/>
+
+    <!-- Window slit -->
+    <rect x="22" y="22" width="4" height="7" rx="2" fill="#1a1917" opacity="0.5"/>
+  </g>
+</svg>

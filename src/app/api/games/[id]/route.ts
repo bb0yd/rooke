@@ -28,3 +28,30 @@ export async function GET(
 
   return NextResponse.json(result.rows[0]);
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const token = req.cookies.get('token')?.value;
+  if (!token) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  const payload = verifyToken(token);
+  if (!payload) {
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const result = await pool.query(
+    'DELETE FROM games WHERE id = $1 AND user_id = $2 RETURNING id',
+    [id, payload.userId]
+  );
+
+  if (result.rows.length === 0) {
+    return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({ success: true });
+}

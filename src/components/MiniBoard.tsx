@@ -1,5 +1,10 @@
+'use client';
+
+import { memo } from 'react';
 import { PieceSymbol } from 'chess.js';
 import { getPieceSvg } from './ChessPieces';
+import { getSettings } from '@/lib/settings';
+import { useEffect, useState } from 'react';
 import styles from './MiniBoard.module.css';
 
 const PIECE_MAP: Record<string, { color: 'w' | 'b'; type: PieceSymbol }> = {
@@ -9,14 +14,16 @@ const PIECE_MAP: Record<string, { color: 'w' | 'b'; type: PieceSymbol }> = {
   r: { color: 'b', type: 'r' }, q: { color: 'b', type: 'q' }, k: { color: 'b', type: 'k' },
 };
 
-interface Props {
-  fen: string;
-}
+const THEMES: Record<string, { light: string; dark: string }> = {
+  classic: { light: '#eae9d4', dark: '#507297' },
+  green:   { light: '#eeeed2', dark: '#769656' },
+  brown:   { light: '#f0d9b5', dark: '#b58863' },
+  dark:    { light: '#ddd',    dark: '#555' },
+};
 
-export default function MiniBoard({ fen }: Props) {
+function parseFen(fen: string): (null | { color: 'w' | 'b'; type: PieceSymbol })[] {
   const placement = fen.split(' ')[0];
   const rows = placement.split('/');
-
   const squares: (null | { color: 'w' | 'b'; type: PieceSymbol })[] = [];
   for (const row of rows) {
     for (const ch of row) {
@@ -27,6 +34,20 @@ export default function MiniBoard({ fen }: Props) {
       }
     }
   }
+  return squares;
+}
+
+function MiniBoard({ fen }: { fen: string }) {
+  const [theme, setTheme] = useState(THEMES.classic);
+
+  useEffect(() => {
+    const s = getSettings();
+    if (s.boardTheme && THEMES[s.boardTheme]) {
+      setTheme(THEMES[s.boardTheme]);
+    }
+  }, []);
+
+  const squares = parseFen(fen);
 
   return (
     <div className={styles.miniBoard}>
@@ -38,7 +59,7 @@ export default function MiniBoard({ fen }: Props) {
           <div
             key={idx}
             className={styles.square}
-            style={{ background: isLight ? '#eae9d4' : '#507297' }}
+            style={{ background: isLight ? theme.light : theme.dark }}
           >
             {piece && getPieceSvg(piece.color, piece.type)}
           </div>
@@ -47,3 +68,5 @@ export default function MiniBoard({ fen }: Props) {
     </div>
   );
 }
+
+export default memo(MiniBoard);

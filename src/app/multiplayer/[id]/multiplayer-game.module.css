@@ -1,0 +1,258 @@
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+  width: calc(100vw - var(--sidebar-width) - 48px);
+  max-width: none;
+}
+
+.boardColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mpBoard {
+  --sq: min((100vh - 100px) / 8, (100vw - 620px) / 8) !important;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.panelTop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panelBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+}
+
+.opponentInfo {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.opponentLabel {
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+.opponentName {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.playerInfo {
+  font-size: 0.85rem;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+.connectionDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.connectionGreen { background: var(--accent); }
+.connectionYellow { background: var(--warning); }
+.connectionRed { background: var(--danger); }
+
+.statusBox {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.statusGameOver {
+  background: rgba(76,175,80,0.15);
+  color: var(--accent);
+}
+
+.statusMyTurn {
+  background: rgba(74,158,255,0.15);
+  color: #4a9eff;
+}
+
+.statusWaiting {
+  background: rgba(255,255,255,0.05);
+  color: #aaa;
+}
+
+.drawBanner {
+  background: rgba(255,193,7,0.15);
+  border: 1px solid rgba(255,193,7,0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drawBannerText {
+  font-size: 0.9rem;
+  color: var(--warning);
+}
+
+.drawBannerActions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.drawAcceptBtn {
+  background: #2e7d32;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.drawDeclineBtn {
+  background: none;
+  border: 1px solid #553333;
+  color: var(--danger);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.capturedRow {
+  display: flex;
+  gap: 2px;
+  min-height: 28px;
+}
+
+.capturedPiece {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+}
+
+.capturedPiece svg {
+  width: 100%;
+  height: 100%;
+}
+
+.moveList {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.moveRow {
+  display: grid;
+  grid-template-columns: 3.5ch 1fr 1fr;
+  gap: 4px;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.moveNumber {
+  color: var(--text-muted);
+  text-align: right;
+  padding-right: 4px;
+}
+
+.moveSan {
+  padding: 3px 8px;
+  color: var(--text-secondary);
+}
+
+.btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn:hover {
+  background: var(--bg-hover);
+}
+
+.resignBtn {
+  background: none;
+  border: 1px solid #553333;
+  color: var(--danger);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.drawOfferBtn {
+  background: none;
+  border: 1px solid #665522;
+  color: var(--warning);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.clockContainer {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.chatSection {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.chatToggle {
+  background: none;
+  border: 1px solid var(--border);
+  color: #aaa;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.chatToggle:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.loadingMsg {
+  padding: 40px;
+  text-align: center;
+  color: #aaa;
+}
+
+.errorMsg {
+  padding: 40px;
+  text-align: center;
+  color: var(--danger);
+}

@@ -1,0 +1,266 @@
+.layout {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+  width: calc(100vw - var(--sidebar-width) - 48px);
+  max-width: none;
+}
+
+.boardColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.exploreBoard {
+  --sq: min((100vh - 100px) / 8, (100vw - 620px) / 8) !important;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  flex-shrink: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* Header */
+.panelHeader {
+  padding: 16px 0 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panelTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  min-height: 28px;
+}
+
+.breadcrumbStart {
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.breadcrumbStart:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.breadcrumbSep {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.breadcrumbMove {
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  font-family: monospace;
+}
+
+.breadcrumbMove:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.breadcrumbCurrent {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Opening name */
+.openingName {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* Position stats summary */
+.positionStats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.statDotWhite {
+  background: #eee;
+}
+
+.statDotDraw {
+  background: #888;
+}
+
+.statDotBlack {
+  background: var(--border);
+  border: 1px solid var(--text-muted);
+}
+
+.statTotal {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* Move tree area */
+.moveTreeArea {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.moveTreeArea::-webkit-scrollbar {
+  width: 5px;
+}
+
+.moveTreeArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.moveTreeArea::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+/* Bottom controls */
+.panelBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.toolBtn {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.toolBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: #fff;
+}
+
+.toolBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.toolBtnIcon {
+  width: 36px;
+  padding: 0;
+}
+
+.toolSpacer {
+  flex: 1;
+}
+
+.repertoireBtn {
+  background: rgba(129, 182, 76, 0.2) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.repertoireBtn:hover:not(:disabled) {
+  background: rgba(129, 182, 76, 0.3) !important;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.loadingDot {
+  color: var(--accent);
+  animation: pulse 1s infinite;
+  margin-right: 8px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* Error state */
+.error {
+  padding: 16px;
+  color: var(--danger);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Turn indicator */
+.turnIndicator {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}

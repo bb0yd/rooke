@@ -1,0 +1,294 @@
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 20px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+  letter-spacing: -0.3px;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+/* Search */
+.searchRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.searchInput:focus {
+  border-color: var(--accent);
+}
+
+.searchResults {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.searchItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.searchItem:last-child {
+  border-bottom: none;
+}
+
+.searchUsername {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.addBtn {
+  padding: 6px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: background var(--transition);
+}
+
+.addBtn:hover {
+  background: var(--accent-hover);
+}
+
+.addBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Friend cards */
+.list {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+}
+
+.card:last-child {
+  border-bottom: none;
+}
+
+.card:hover {
+  background: var(--bg-hover);
+}
+
+.cardInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: var(--accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.friendName {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.friendStatus {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.cardActions {
+  display: flex;
+  gap: 6px;
+}
+
+.acceptBtn {
+  padding: 6px 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background var(--transition);
+}
+
+.acceptBtn:hover {
+  background: var(--accent-hover);
+}
+
+.declineBtn {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all var(--transition);
+}
+
+.declineBtn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.challengeBtn {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all var(--transition);
+}
+
+.challengeBtn:hover {
+  background: var(--accent-dim);
+}
+
+.removeBtn {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.82rem;
+  transition: all var(--transition);
+}
+
+.removeBtn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Messages */
+.msg {
+  display: block;
+  text-align: center;
+  padding: 8px;
+  margin-top: 8px;
+  border-radius: var(--radius);
+  font-size: 0.88rem;
+}
+
+.msgSuccess {
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.msgError {
+  color: var(--danger);
+  background: rgba(224, 85, 85, 0.1);
+}
+
+.empty {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 0.92rem;
+}
+
+.loading {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 60px 0;
+}
+
+.pendingLabel {
+  font-size: 0.72rem;
+  color: var(--warning);
+  font-weight: 600;
+  padding: 2px 8px;
+  background: rgba(232, 167, 59, 0.1);
+  border-radius: 8px;
+}
+
+.sentLabel {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .page {
+    padding: 20px 14px;
+  }
+
+  .title {
+    font-size: 1.2rem;
+  }
+
+  .searchRow {
+    flex-direction: column;
+  }
+
+  .cardActions {
+    flex-direction: column;
+    gap: 4px;
+  }
+}

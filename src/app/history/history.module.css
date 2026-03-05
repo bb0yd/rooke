@@ -1,0 +1,406 @@
+.page {
+  max-width: 900px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.empty {
+  color: var(--text-secondary);
+}
+
+.loading {
+  color: var(--text-secondary);
+}
+
+/* Review layout - matches play page */
+.reviewLayout {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  height: calc(100vh - 80px);
+  overflow: hidden;
+  width: calc(100vw - var(--sidebar-width) - 48px);
+  max-width: none;
+}
+
+.boardColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.reviewBoard {
+  --sq: min((100vh - 100px) / 8, (100vw - 620px) / 8) !important;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.panelTop {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panelBottom {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 14px;
+  flex-shrink: 0;
+}
+
+/* Game info header */
+.gameInfo {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gameDate {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.gameResult {
+  font-weight: 600;
+}
+
+.positionInfo {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Captured pieces */
+.capturedRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  padding: 4px 0;
+}
+
+.capturedPiece {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+}
+
+.capturedPiece svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Move list */
+.moveListContainer {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.moveListContainer::-webkit-scrollbar {
+  width: 5px;
+}
+
+.moveListContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.moveListContainer::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.moveList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.moveRow {
+  display: grid;
+  grid-template-columns: 3.5ch 1fr 1fr;
+  gap: 4px;
+  align-items: center;
+}
+
+.moveNumber {
+  color: var(--text-muted);
+  text-align: right;
+  padding-right: 4px;
+  font-size: 0.8rem;
+}
+
+.move {
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.move:hover {
+  background: #333;
+}
+
+.moveActive {
+  background: var(--bg-hover);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.toolBtn {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.toolBtn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: #fff;
+}
+
+.toolBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.toolBtnIcon {
+  width: 36px;
+  padding: 0;
+}
+
+.toolSpacer {
+  flex: 1;
+}
+
+.backBtn {
+  background: none !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.backBtn:hover {
+  background: rgba(74, 158, 255, 0.1) !important;
+}
+
+/* Auto play speed */
+.autoPlayRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Annotations */
+.annotationPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.annotationGlyphs {
+  display: flex;
+  gap: 4px;
+}
+
+.glyphBtn {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  width: 36px;
+  height: 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+
+.glyphBtn:hover {
+  background: var(--bg-hover);
+  color: #fff;
+}
+
+.glyphBtnActive {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #fff !important;
+}
+
+.commentEdit {
+  display: flex;
+  gap: 6px;
+}
+
+.commentInput {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.commentInput:focus {
+  border-color: var(--accent);
+}
+
+.commentSaveBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.addCommentBtn {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  text-align: left;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.addCommentBtn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Eval bar column */
+.evalColumn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+}
+
+/* Analyze button */
+.analyzeBtn {
+  background: #1a5a2a !important;
+  border-color: #2a7a3a !important;
+  color: #6fd67f !important;
+  font-weight: 600;
+}
+
+.analyzeBtn:hover:not(:disabled) {
+  background: #2a7a3a !important;
+  color: #fff !important;
+}
+
+/* Analysis progress bar */
+.analysisProgress {
+  position: relative;
+  width: 100%;
+  height: 22px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #333;
+}
+
+.analysisProgressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #4a9eff, #6fd67f);
+  transition: width 0.2s ease;
+}
+
+.analysisProgressText {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #fff;
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
+}
+
+/* Accuracy summary */
+.accuracySummary {
+  display: flex;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 4px 0;
+}
+
+/* Move classification colors */
+.moveInaccuracy {
+  color: var(--warning) !important;
+}
+
+.moveMistake {
+  color: #ff9800 !important;
+}
+
+.moveBlunder {
+  color: var(--danger) !important;
+}
+
+.autoPlaySelect {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}

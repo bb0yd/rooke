@@ -1,0 +1,88 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 60px 60px 1fr;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.headerMove, .headerGames, .headerBar {
+  font-weight: 600;
+}
+
+.moveRow {
+  display: grid;
+  grid-template-columns: 60px 60px 1fr;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  align-items: center;
+  transition: background 0.15s;
+}
+
+.moveRow:hover {
+  background: var(--bg-card);
+}
+
+.moveSan {
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.moveGames {
+  font-family: monospace;
+  font-size: 0.8rem;
+  color: #aaa;
+}
+
+.bar {
+  display: flex;
+  height: 18px;
+  border-radius: 3px;
+  overflow: hidden;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.barWhite {
+  background: #eee;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barDraw {
+  background: #888;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barBlack {
+  background: #333;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 20px;
+}
