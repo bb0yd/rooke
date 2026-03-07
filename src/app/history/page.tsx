@@ -8,7 +8,7 @@ import EvalBar from '@/components/EvalBar';
 import { getPieceSvg } from '@/components/ChessPieces';
 import { getSettings } from '@/lib/settings';
 import { getEvaluation } from '@/lib/engine';
-import { classifyMove, calculateAccuracy, MoveClassification } from '@/lib/analysis';
+import { calculateCpLoss, classifyMove, calculateAccuracy, MoveClassification, uciToSan, isBrilliantMove } from '@/lib/analysis';
 import styles from './history.module.css';
 
 interface Game {
@@ -19,6 +19,7 @@ interface Game {
   created_at: string;
   opening_name?: string;
   opponent?: string;
+  source?: string;
 }
 
 const PIECE_ORDER: Record<string, number> = { q: 0, r: 1, b: 2, n: 3, p: 4 };
@@ -74,9 +75,10 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
   const [annotationComment, setAnnotationComment] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
-  const [evaluations, setEvaluations] = useState<Record<number, { score: number; mate: number | null; bestMove: string }>>({});
+  const [evaluations, setEvaluations] = useState<Record<number, { score: number; mate: number | null; bestMove: string; pv: string[] }>>({});
   const [moveClassifications, setMoveClassifications] = useState<Record<number, MoveClassification>>({});
   const [accuracy, setAccuracy] = useState<{ white: number; black: number } | null>(null);
+  const [analysisDepth, setAnalysisDepth] = useState(12);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const moveListRef = useRef<HTMLDivElement>(null);
   const analyzingRef = useRef(false);
@@ -164,7 +166,7 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
     setMoveClassifications({});
     setAccuracy(null);
 
-    const evals: Record<number, { score: number; mate: number | null; bestMove: string }> = {};
+    const evals: Record<number, { score: number; mate: number | null; bestMove: string; pv: string[] }> = {};
     const classifications: Record<number, MoveClassification> = {};
     const whiteCpLosses: number[] = [];
     const blackCpLosses: number[] = [];
@@ -181,27 +183,24 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
     // Evaluate each position
     for (let i = 0; i <= totalMoves; i++) {
       if (!analyzingRef.current) break;
-      const result = await getEvaluation(positions[i], 12);
-      evals[i] = { score: result.score, mate: result.mate, bestMove: result.bestMove };
+      const result = await getEvaluation(positions[i], analysisDepth);
+      evals[i] = { score: result.score, mate: result.mate, bestMove: result.bestMove, pv: result.pv || [] };
       setEvaluations(prev => ({ ...prev, [i]: evals[i] }));
 
       // Classify the move that led to this position (i > 0)
       if (i > 0) {
         const prevEval = evals[i - 1];
         const currEval = evals[i];
-        // Calculate cpLoss from the perspective of the side that moved
-        // Move at index i-1 in history: even index = white move, odd = black move
         const isWhiteMove = (i - 1) % 2 === 0;
-        let cpLoss: number;
-        if (isWhiteMove) {
-          // White moved: loss = prev score - current score (white wants higher score)
-          cpLoss = prevEval.score - currEval.score;
-        } else {
-          // Black moved: loss = current score - prev score (black wants lower score)
-          cpLoss = currEval.score - prevEval.score;
+        const cpLoss = calculateCpLoss(prevEval.score, currEval.score);
+        let classification = classifyMove(cpLoss);
+        // Check for brilliant move: top engine choice with no immediate recapture in PV
+        if (classification === 'best' && evals[i - 1]?.pv?.length >= 2) {
+          const isTop = evals[i - 1].bestMove === (history[i - 1].from + history[i - 1].to);
+          if (isBrilliantMove(cpLoss, isTop, evals[i - 1].pv, 50)) {
+            classification = 'brilliant';
+          }
         }
-        cpLoss = Math.max(0, cpLoss);
-        const classification = classifyMove(cpLoss);
         classifications[i] = classification;
         setMoveClassifications(prev => ({ ...prev, [i]: classification }));
 
@@ -292,6 +291,7 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
     const cls = moveClassifications[moveIndex];
     if (!cls) return '';
     switch (cls) {
+      case 'brilliant': return styles.moveBrilliant;
       case 'inaccuracy': return styles.moveInaccuracy;
       case 'mistake': return styles.moveMistake;
       case 'blunder': return styles.moveBlunder;
@@ -313,6 +313,11 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
           onClick={() => { setViewIndex(whiteIdx + 1); setAutoPlaying(false); }}
         >
           {history[whiteIdx].san}{annotations[whiteIdx + 1]?.glyph || ''}
+          {moveClassifications[whiteIdx + 1] && ['inaccuracy', 'mistake', 'blunder'].includes(moveClassifications[whiteIdx + 1]) && evaluations[whiteIdx] && evaluations[whiteIdx].bestMove && (
+            <span className={styles.moveBestHint}>
+              Best: {uciToSan((() => { const g = new Chess(); for (let k = 0; k < whiteIdx; k++) g.move(history[k].san); return g.fen(); })(), evaluations[whiteIdx].bestMove)}
+            </span>
+          )}
         </span>
         {blackIdx < totalMoves ? (
           <span
@@ -321,10 +326,70 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
             onClick={() => { setViewIndex(blackIdx + 1); setAutoPlaying(false); }}
           >
             {history[blackIdx].san}{annotations[blackIdx + 1]?.glyph || ''}
+            {moveClassifications[blackIdx + 1] && ['inaccuracy', 'mistake', 'blunder'].includes(moveClassifications[blackIdx + 1]) && evaluations[blackIdx] && evaluations[blackIdx].bestMove && (
+              <span className={styles.moveBestHint}>
+                Best: {uciToSan((() => { const g = new Chess(); for (let k = 0; k < blackIdx; k++) g.move(history[k].san); return g.fen(); })(), evaluations[blackIdx].bestMove)}
+              </span>
+            )}
           </span>
         ) : <span />}
       </div>
     );
+  }
+
+  // Build annotated PGN string
+  const GLYPH_TO_NAG: Record<string, string> = {
+    '!': '$1', '?': '$2', '!!': '$3', '??': '$4', '!?': '$5', '?!': '$6',
+  };
+
+  function buildAnnotatedPgn(): string {
+    // Extract headers from original PGN
+    const headerLines: string[] = [];
+    if (gameData.pgn) {
+      const headerRegex = /\[([^\]]+)\]/g;
+      let match;
+      while ((match = headerRegex.exec(gameData.pgn)) !== null) {
+        headerLines.push(match[0]);
+      }
+    }
+
+    // Build move text from history with annotations
+    const parts: string[] = [];
+    for (let i = 0; i < history.length; i++) {
+      const moveIndex = i + 1; // 1-based annotation key
+      const isWhite = i % 2 === 0;
+      const moveNumber = Math.floor(i / 2) + 1;
+
+      if (isWhite) {
+        parts.push(`${moveNumber}.`);
+      }
+
+      parts.push(history[i].san);
+
+      // Add NAG if glyph annotation exists
+      const ann = annotations[moveIndex];
+      if (ann?.glyph && GLYPH_TO_NAG[ann.glyph]) {
+        parts.push(GLYPH_TO_NAG[ann.glyph]);
+      }
+
+      // Add comment if exists
+      if (ann?.comment) {
+        parts.push(`{ ${ann.comment} }`);
+      }
+    }
+
+    // Determine result string
+    let resultStr = '*';
+    if (gameData.result === 'white_wins') resultStr = '1-0';
+    else if (gameData.result === 'black_wins') resultStr = '0-1';
+    else if (gameData.result === 'draw') resultStr = '1/2-1/2';
+    parts.push(resultStr);
+
+    const moveText = parts.join(' ');
+    if (headerLines.length > 0) {
+      return headerLines.join('\n') + '\n\n' + moveText + '\n';
+    }
+    return moveText + '\n';
   }
 
   // Current position eval for the eval bar
@@ -446,19 +511,57 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
               )}
             </div>
           )}
+
+          {viewIndex > 0 && evaluations[viewIndex - 1] && evaluations[viewIndex - 1].bestMove && moveClassifications[viewIndex] && (
+            <div className={styles.bestMovePanel}>
+              <div className={styles.bestMoveHeader}>Engine suggestion</div>
+              <div className={styles.bestMoveContent}>
+                <span className={styles.bestMoveLabel}>Best:</span>
+                <span className={styles.bestMoveSan}>
+                  {uciToSan((() => {
+                    const g = new Chess();
+                    for (let i = 0; i < viewIndex - 1; i++) g.move(history[i].san);
+                    return g.fen();
+                  })(), evaluations[viewIndex - 1].bestMove)}
+                </span>
+                <span className={styles.bestMoveEval}>
+                  ({evaluations[viewIndex - 1].score > 0 ? '+' : ''}{(evaluations[viewIndex - 1].score / 100).toFixed(1)})
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={styles.panelBottom}>
           {/* Analysis controls */}
           <div className={styles.toolbar}>
             {!analyzing && !accuracy && (
-              <button
-                className={`${styles.toolBtn} ${styles.analyzeBtn}`}
-                onClick={runAnalysis}
-                disabled={totalMoves === 0}
-              >
-                Analyze
-              </button>
+              <>
+                <select
+                  className={styles.autoPlaySelect}
+                  value={analysisDepth}
+                  onChange={e => setAnalysisDepth(Number(e.target.value))}
+                  title="Analysis depth"
+                >
+                  <option value={10}>Depth 10</option>
+                  <option value={12}>Depth 12</option>
+                  <option value={14}>Depth 14</option>
+                  <option value={16}>Depth 16</option>
+                  <option value={18}>Depth 18</option>
+                  <option value={20}>Depth 20</option>
+                  <option value={24}>Depth 24</option>
+                </select>
+                <button
+                  className={`${styles.toolBtn} ${styles.analyzeBtn}`}
+                  onClick={runAnalysis}
+                  disabled={totalMoves === 0}
+                >
+                  Analyze
+                </button>
+                {analysisDepth > 18 && totalMoves > 40 && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>High depth on long games may be slow</span>
+                )}
+              </>
             )}
             {analyzing && (
               <button
@@ -524,13 +627,15 @@ function GameReview({ game: gameData, onBack }: { game: Game; onBack: () => void
               &larr; Back
             </button>
             <button className={styles.toolBtn} onClick={() => {
-              navigator.clipboard.writeText(gameData.pgn);
+              const pgn = buildAnnotatedPgn();
+              navigator.clipboard.writeText(pgn);
               alert('PGN copied to clipboard!');
             }}>
               Copy PGN
             </button>
             <button className={styles.toolBtn} onClick={() => {
-              const blob = new Blob([gameData.pgn], { type: 'application/x-chess-pgn' });
+              const pgn = buildAnnotatedPgn();
+              const blob = new Blob([pgn], { type: 'application/x-chess-pgn' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
@@ -559,7 +664,7 @@ export default function HistoryPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function loadGames(p = page) {
-    const params = new URLSearchParams({ page: String(p), limit: '20' });
+    const params = new URLSearchParams({ page: String(p), limit: '20', include_multiplayer: 'true' });
     if (searchQuery) params.set('search', searchQuery);
     if (resultFilter) params.set('result', resultFilter);
     fetch(`/api/games?${params}`)
@@ -576,7 +681,8 @@ export default function HistoryPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { loadGames(page); }, [page, resultFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  // loadGames is stable (uses its own param + state captured at call time)
+  useEffect(() => { loadGames(page); }, [page, resultFilter]); // eslint-disable-line react-hooks/exhaustive-deps -- loadGames uses page param directly
 
   async function handleDelete(id: number) {
     if (!confirm('Delete this game?')) return;
@@ -752,6 +858,7 @@ export default function HistoryPage() {
             <thead>
               <tr>
                 <th>Date</th>
+                <th>Opponent</th>
                 <th>Result</th>
                 <th>Moves</th>
                 <th></th>
@@ -761,8 +868,9 @@ export default function HistoryPage() {
               {games.map(game => {
                 const { label, className } = formatResult(game.result);
                 return (
-                  <tr key={game.id}>
+                  <tr key={`${game.source || 'local'}-${game.id}`}>
                     <td>{formatDate(game.created_at)}</td>
+                    <td style={{ fontSize: '0.85rem' }}>{game.opponent || (game.source === 'multiplayer' ? 'Player' : 'AI')}</td>
                     <td>
                       <span className={`result-badge ${className}`}>{label}</span>
                     </td>

@@ -169,6 +169,29 @@
   color: #fff !important;
 }
 
+/* Theme filter chips */
+.themeChip {
+  font-size: 0.72rem;
+  padding: 3px 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.themeChip:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.themeChipActive {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  background: rgba(122, 179, 255, 0.1);
+}
+
 /* Buttons */
 .toolbar {
   display: flex;
@@ -287,4 +310,109 @@
   padding: 6px 0;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+}
+
+/* Puzzle Rush */
+.rushRow {
+  display: flex;
+  justify-content: center;
+}
+
+.rushBtn {
+  background: #e8a73b;
+  color: #1a1917;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.15s;
+}
+
+.rushBtn:hover {
+  background: #f0b84c;
+}
+
+.rushHs {
+  font-weight: 500;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.rushTimer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  background: rgba(232, 167, 59, 0.15);
+  border: 1px solid rgba(232, 167, 59, 0.4);
+  border-radius: 8px;
+}
+
+.rushTimerValue {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #e8a73b;
+  font-variant-numeric: tabular-nums;
+}
+
+.rushSolved {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.rushOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.rushModal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 40px;
+  text-align: center;
+  min-width: 300px;
+}
+
+.rushModal h2 {
+  font-size: 1.3rem;
+  margin-bottom: 16px;
+}
+
+.rushScore {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #e8a73b;
+  line-height: 1;
+}
+
+.rushScoreLabel {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.rushNewRecord {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+}
+
+.rushActions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
 }

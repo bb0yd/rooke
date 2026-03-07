@@ -57,7 +57,7 @@ export default function SpectatePage() {
               {games.map(game => (
                 <Link
                   key={game.id}
-                  href={`/multiplayer/${game.id}`}
+                  href={`/multiplayer/spectate/${game.id}`}
                   className={styles.card}
                 >
                   <div className={styles.boardWrapper}>

@@ -2,346 +2,316 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Chess } from 'chess.js';
 import AppShell from '@/components/AppShell';
-import MiniBoard from '@/components/MiniBoard';
-import ChessBoard from '@/components/ChessBoard';
-import { OPENINGS, Opening } from '@/data/openings';
-import { getOpeningStats, syncFromServer } from '@/lib/trainerStats';
+import SkillOverview from '@/components/SkillOverview';
+import GameAnalyzer from '@/components/GameAnalyzer';
+import TacticalTrainer from '@/components/TacticalTrainer';
+import EndgameTrainer from '@/components/EndgameTrainer';
+import CoachingGame from '@/components/CoachingGame';
+import { FocusArea } from '@/lib/learnerFocus';
+import { SkillProfile } from '@/lib/skillProfile';
+import { TrainingSessionSummary } from '@/lib/trainingSession';
+import { Exercise } from '@/lib/trainingPlan';
 import styles from './learn.module.css';
 
-interface ApiOpening {
-  id: string;
-  name: string;
-  description: string;
-  player_color: string;
-  thumbnail_fen: string;
-  is_custom?: boolean;
-  lines: { id: string; name: string; moves: string[] }[];
-}
-
-function mapApiOpening(o: ApiOpening): Opening & { isCustom?: boolean } {
-  return {
-    id: o.id,
-    name: o.name,
-    description: o.description,
-    playerColor: o.player_color as Opening['playerColor'],
-    thumbnailFen: o.thumbnail_fen,
-    lines: (o.lines ?? []).map(l => ({
-      ...l,
-      moves: Array.isArray(l.moves) ? l.moves : JSON.parse(l.moves as any),
-    })),
-    isCustom: o.is_custom,
-  };
-}
+type View = 'loading' | 'analyzing' | 'coach' | 'exercise';
 
 export default function LearnPage() {
-  const [openings, setOpenings] = useState<(Opening & { isCustom?: boolean })[]>(OPENINGS);
-  const [progress, setProgress] = useState<Record<string, number>>({});
-  const [showModal, setShowModal] = useState(false);
-  const [formName, setFormName] = useState('');
-  const [formDesc, setFormDesc] = useState('');
-  const [formColor, setFormColor] = useState<'w' | 'b'>('w');
-  const [submitting, setSubmitting] = useState(false);
+  const [view, setView] = useState<View>('loading');
+  const [skillProfile, setSkillProfile] = useState<SkillProfile | null>(null);
+  const [focusAreas, setFocusAreas] = useState<FocusArea[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [currentExercise, setCurrentExercise] = useState<Exercise | null>(null);
+  const [unanalyzedCount, setUnanalyzedCount] = useState(0);
 
-  // Line builder state
-  const [showLineModal, setShowLineModal] = useState(false);
-  const [lineOpeningId, setLineOpeningId] = useState<string | null>(null);
-  const [lineName, setLineName] = useState('');
-  const [lineGame, setLineGame] = useState<Chess>(() => new Chess());
-  const [lineMoves, setLineMoves] = useState<string[]>([]);
-  const [lineSubmitting, setLineSubmitting] = useState(false);
-
-  const fetchOpenings = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/openings');
-      if (res.ok) {
-        const data: ApiOpening[] = await res.json();
-        const mapped = data.map(mapApiOpening);
-        setOpenings(mapped);
-        return mapped;
-      }
-    } catch {
-      // fall back to static data
-    }
-    setOpenings(OPENINGS);
-    return OPENINGS;
-  }, []);
+      const planRes = await fetch('/api/training-plan');
 
-  const computeProgress = (list: (Opening & { isCustom?: boolean })[]) => {
-    const p: Record<string, number> = {};
-    for (const opening of list) {
-      const lineIds = opening.lines.map(l => l.id);
-      const stats = getOpeningStats(opening.id, lineIds);
-      p[opening.id] = stats.total > 0 ? (stats.mastered / stats.total) * 100 : 0;
-    }
-    setProgress(p);
-  };
+      if (planRes.ok) {
+        const data = await planRes.json();
+        setExercises(data.exercises || []);
+        setFocusAreas(data.focusAreas || []);
+        setUnanalyzedCount(data.unanalyzedCount || 0);
+        if (data.profile) {
+          setSkillProfile(data.profile);
+        }
+
+        // Auto-start analysis if there are unanalyzed games
+        if (data.unanalyzedCount > 0) {
+          setView('analyzing');
+          return;
+        }
+      }
+
+    } catch {}
+
+    setView('coach');
+  }, []);
 
   useEffect(() => {
-    syncFromServer().finally(async () => {
-      const list = await fetchOpenings();
-      computeProgress(list);
-    });
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      const res = await fetch('/api/openings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: formName, description: formDesc, playerColor: formColor }),
-      });
-      if (res.ok) {
-        setShowModal(false);
-        setFormName('');
-        setFormDesc('');
-        setFormColor('w');
-        const list = await fetchOpenings();
-        computeProgress(list);
-      }
-    } finally {
-      setSubmitting(false);
-    }
+  const handleAnalysisComplete = useCallback(() => {
+    // Re-fetch everything after analysis
+    fetchData().then(() => setView('coach'));
+  }, [fetchData]);
+
+  const handleSkipAnalysis = () => setView('coach');
+
+  const startExercise = (exercise: Exercise) => {
+    setCurrentExercise(exercise);
+    setView('exercise');
   };
 
-  const handleDeleteOpening = async (openingId: string) => {
-    if (!confirm('Delete this opening and all its lines?')) return;
+  const handleExerciseComplete = async (exerciseId: string, summary?: TrainingSessionSummary) => {
+    const exercise = currentExercise;
     try {
-      const res = await fetch(`/api/openings/${openingId}`, { method: 'DELETE' });
-      if (res.ok) {
-        const list = await fetchOpenings();
-        computeProgress(list);
-      }
+      await fetch('/api/training-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module: exercise?.type || 'practice',
+          exerciseType: exerciseId,
+          difficulty: exercise?.difficulty || 1,
+          score: summary?.score ?? 1,
+          attempts: summary?.attempts ?? 1,
+          successes: summary?.successes ?? ((summary?.score ?? 1) > 0 ? 1 : 0),
+          firstTrySuccesses: summary?.firstTrySuccesses ?? 0,
+          hintsUsed: summary?.hintsUsed ?? 0,
+          elapsedMs: summary?.elapsedMs,
+          metadata: {
+            themes: exercise?.themes || [],
+            drillSource: exercise?.drillSource || 'library',
+            analysisTheme: exercise?.analysisTheme || null,
+            targetFocusAreas: exercise?.targetFocusAreas || [],
+            ...(summary?.metadata || {}),
+          },
+        }),
+      });
+      await fetch('/api/skill-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
     } catch {}
+
+    setCurrentExercise(null);
+    setView('coach');
+    await fetchData();
   };
 
-  const openLineBuilder = (openingId: string) => {
-    setLineOpeningId(openingId);
-    setLineName('');
-    setLineGame(new Chess());
-    setLineMoves([]);
-    setShowLineModal(true);
+  const handleBackToCoach = () => {
+    setCurrentExercise(null);
+    setView('coach');
   };
 
-  const handleLineBoardMove = useCallback((from: any, to: any, promotion?: any) => {
-    setLineGame(prev => {
-      const g = new Chess(prev.fen());
-      const move = g.move({ from, to, promotion });
-      if (move) {
-        setLineMoves(m => [...m, move.san]);
-        return g;
-      }
-      return prev;
-    });
-  }, []);
-
-  const undoLineMove = () => {
-    setLineGame(prev => {
-      const g = new Chess(prev.fen());
-      g.undo();
-      setLineMoves(m => m.slice(0, -1));
-      return g;
-    });
-  };
-
-  const handleAddLine = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!lineOpeningId || lineMoves.length === 0) return;
-    setLineSubmitting(true);
-    try {
-      const res = await fetch(`/api/openings/${lineOpeningId}/lines`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: lineName || `Line ${Date.now()}`, moves: lineMoves }),
-      });
-      if (res.ok) {
-        setShowLineModal(false);
-        const list = await fetchOpenings();
-        computeProgress(list);
-      }
-    } finally {
-      setLineSubmitting(false);
-    }
-  };
-
-  const customOpenings = openings.filter(o => (o as any).isCustom);
-  const builtinOpenings = openings.filter(o => !(o as any).isCustom);
-
-  const renderCard = (opening: Opening & { isCustom?: boolean }) => {
-    const pct = progress[opening.id] ?? 0;
-    const stats = (() => {
-      const lineIds = opening.lines.map(l => l.id);
-      return getOpeningStats(opening.id, lineIds);
-    })();
-    return (
-      <div key={opening.id} className={styles.card}>
-        <MiniBoard fen={opening.thumbnailFen} />
-        <div className={styles.cardBody}>
-          <div className={styles.cardName}>{opening.name}</div>
-          <div className={styles.cardDescription}>{opening.description}</div>
-          <div className={styles.cardMeta}>
-            {opening.lines.length} lines &middot; Play as {opening.playerColor === 'w' ? 'White' : 'Black'}
-            {stats.mastered > 0 && (
-              <> &middot; {stats.mastered} mastered</>
-            )}
-            {stats.struggling > 0 && (
-              <> &middot; {stats.struggling} struggling</>
-            )}
-          </div>
-          <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: `${pct}%` }} />
-          </div>
-          <div className={styles.cardActions}>
-            <Link href={`/learn/${opening.id}`} className={styles.startLink}>
-              {pct > 0 ? 'Continue learning' : 'Start learning'} &rarr;
-            </Link>
-            {opening.isCustom && (
-              <>
-                <button className={styles.addLineBtn} onClick={() => openLineBuilder(String(opening.id))}>
-                  + Add Line
-                </button>
-                <button className={styles.deleteBtn} onClick={() => handleDeleteOpening(String(opening.id))}>
-                  Delete
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const nextExercise = exercises[0] || null;
+  const openingExerciseHref = currentExercise?.openingTargetId
+    ? `/learn/${currentExercise.openingTargetId}${currentExercise.openingMode ? `?mode=${currentExercise.openingMode}` : ''}`
+    : '/learn/openings';
+  const isTrainerExercise = !!currentExercise && currentExercise.type !== 'openings';
+  const showExerciseTopBar = currentExercise?.type === 'openings';
 
   return (
-    <AppShell>
+    <AppShell wide>
       <div className={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 className={styles.title}>Learn Openings</h1>
-          <button className={styles.createBtn} onClick={() => setShowModal(true)}>
-            + Create Opening
-          </button>
-        </div>
-        <p className={styles.subtitle}>
-          Master key opening lines with interactive training
-        </p>
 
-        {customOpenings.length > 0 && (
-          <div className={styles.customSection}>
-            <h2 className={styles.sectionTitle}>Your Custom Repertoire</h2>
-            <div className={styles.cardList}>
-              {customOpenings.map(renderCard)}
+        {/* Loading */}
+        {view === 'loading' && (
+          <div className={styles.centered}>
+            <div className={styles.loadingText}>Setting up your lesson...</div>
+          </div>
+        )}
+
+        {/* Auto-analyzing games */}
+        {view === 'analyzing' && (
+          <div className={styles.analyzingFlow}>
+            <div className={styles.coachBubble}>
+              <div className={styles.coachAvatar}>&#9817;</div>
+              <div className={styles.coachMessage}>
+                I found {unanalyzedCount} game{unanalyzedCount !== 1 ? 's' : ''} to review.
+                Let me analyze {unanalyzedCount === 1 ? 'it' : 'them'} so I can see where you need help.
+              </div>
+            </div>
+            <GameAnalyzer
+              onComplete={handleAnalysisComplete}
+              autoStart
+            />
+            <button className={styles.skipLink} onClick={handleSkipAnalysis}>
+              Skip for now
+            </button>
+          </div>
+        )}
+
+        {/* Coach view */}
+        {view === 'coach' && (
+          <div className={styles.coachFlow}>
+            {/* Top: skills + focus side by side */}
+            {(skillProfile || focusAreas.length > 0) && (
+              <div className={styles.topBar}>
+                {skillProfile && <SkillOverview profile={skillProfile} />}
+                {focusAreas.length > 0 && (
+                  <div className={styles.focusPanel}>
+                    <div className={styles.focusHeader}>
+                      <h3 className={styles.focusTitle}>Coach Priorities</h3>
+                    </div>
+                    <div className={styles.focusList}>
+                      {focusAreas.slice(0, 3).map(area => (
+                        <div key={area.id} className={styles.focusItem}>
+                          <div className={styles.focusItemHeader}>
+                            <span className={styles.focusLabel}>{area.label}</span>
+                            <span className={styles.focusScore}>{Math.round(area.score)}</span>
+                          </div>
+                          <div className={styles.focusReason}>{area.reason}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Coach + action */}
+            {nextExercise ? (
+              <>
+                <div className={styles.coachBubble}>
+                  <div className={styles.coachAvatar}>&#9817;</div>
+                  <div className={styles.coachMessage}>{nextExercise.coachSays}</div>
+                </div>
+
+                {(nextExercise.whyNow || nextExercise.successMetric || nextExercise.paceHint) && (
+                  <div className={styles.lessonBrief}>
+                    {nextExercise.whyNow && (
+                      <div>
+                        <span className={styles.lessonLabel}>Why this now</span>
+                        <div className={styles.lessonText}>{nextExercise.whyNow}</div>
+                      </div>
+                    )}
+                    {nextExercise.successMetric && (
+                      <div>
+                        <span className={styles.lessonLabel}>Success looks like</span>
+                        <div className={styles.lessonText}>{nextExercise.successMetric}</div>
+                      </div>
+                    )}
+                    {nextExercise.paceHint && (
+                      <div>
+                        <span className={styles.lessonLabel}>Pace</span>
+                        <div className={styles.lessonText}>{nextExercise.paceHint}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  className={styles.startBtn}
+                  onClick={() => startExercise(nextExercise)}
+                >
+                  {nextExercise.title} &rarr;
+                </button>
+
+                {exercises.length > 1 && (
+                  <div className={styles.upNext}>
+                    <span className={styles.upNextLabel}>Up next:</span>
+                    {exercises.slice(1, 4).map(ex => (
+                      <button
+                        key={ex.id}
+                        className={styles.upNextItem}
+                        onClick={() => startExercise(ex)}
+                      >
+                        {ex.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className={styles.coachBubble}>
+                <div className={styles.coachAvatar}>&#9817;</div>
+                <div className={styles.coachMessage}>
+                  Great work today! You&apos;ve completed all your exercises.
+                  Come back tomorrow or go play a game!
+                </div>
+              </div>
+            )}
+
+            {/* Quick links */}
+            <div className={styles.quickLinks}>
+              <Link href="/puzzles" className={styles.quickLink}>Free Puzzles</Link>
+              <Link href="/learn/openings" className={styles.quickLink}>Opening Repertoire</Link>
             </div>
           </div>
         )}
 
-        <div className={styles.cardList}>
-          {builtinOpenings.map(renderCard)}
-        </div>
-      </div>
-
-      {/* Create Opening Modal */}
-      {showModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <h2>Create Custom Opening</h2>
-            <form onSubmit={handleCreate}>
-              <label>
-                Name
-                <input
-                  type="text"
-                  value={formName}
-                  onChange={e => setFormName(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                Description
-                <textarea
-                  value={formDesc}
-                  onChange={e => setFormDesc(e.target.value)}
-                  rows={3}
-                />
-              </label>
-              <label>
-                Player Color
-                <select value={formColor} onChange={e => setFormColor(e.target.value as 'w' | 'b')}>
-                  <option value="w">White</option>
-                  <option value="b">Black</option>
-                </select>
-              </label>
-              <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create'}
+        {/* Exercise view — the actual training */}
+        {view === 'exercise' && currentExercise && (
+          <div className={`${styles.exerciseView}${isTrainerExercise ? ` ${styles.exerciseViewTrainer}` : ''}`}>
+            {showExerciseTopBar && (
+              <div className={styles.exerciseTopBar}>
+                <button className={styles.backBtn} onClick={handleBackToCoach}>
+                  &larr; Back
                 </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
-      {/* Add Line Modal with interactive board */}
-      {showLineModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowLineModal(false)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()} style={{ maxWidth: 520 }}>
-            <h2>Add Line</h2>
-            <form onSubmit={handleAddLine}>
-              <label>
-                Line Name
-                <input
-                  type="text"
-                  value={lineName}
-                  onChange={e => setLineName(e.target.value)}
-                  placeholder="e.g. Main Line, Aggressive Variation"
-                  required
-                />
-              </label>
-
-              <div style={{ margin: '12px 0' }}>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  Play the moves on the board to record the line:
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <div style={{ '--sq': '40px' } as React.CSSProperties}>
-                    <ChessBoard
-                      externalGame={lineGame}
-                      onMoveRequest={handleLineBoardMove}
-                      hideControls
-                    />
+                <div className={styles.exerciseCoach}>
+                  <span className={styles.coachAvatarSmall}>&#9817;</span>
+                  <div>
+                    <div>{currentExercise.coachSays}</div>
+                    {currentExercise.successMetric && (
+                      <div className={styles.exerciseMetric}>Goal: {currentExercise.successMetric}</div>
+                    )}
                   </div>
                 </div>
               </div>
+            )}
 
-              <div className={styles.lineBuilderMoves}>
-                {lineMoves.length === 0 ? (
-                  <span style={{ color: 'var(--text-muted)' }}>Make moves on the board...</span>
-                ) : (
-                  lineMoves.map((m, i) => (
-                    <span key={i}>
-                      {i % 2 === 0 && <span style={{ color: 'var(--text-muted)' }}>{Math.floor(i / 2) + 1}.</span>}
-                      {m}{' '}
-                    </span>
-                  ))
-                )}
-                {lineMoves.length > 0 && (
-                  <button type="button" className={styles.lineBuilderUndo} onClick={undoLineMove}>
-                    Undo
-                  </button>
-                )}
-              </div>
+            <div className={`${styles.exerciseContent}${isTrainerExercise ? ` ${styles.exerciseContentTrainer}` : ''}`}>
+              {currentExercise.type === 'tactics' && (
+                <TacticalTrainer
+                  themes={currentExercise.themes}
+                  drillSource={currentExercise.drillSource}
+                  analysisTheme={currentExercise.analysisTheme}
+                  difficulty={currentExercise.difficulty}
+                  coachingMessage={currentExercise.coachSays}
+                  successMetric={currentExercise.successMetric}
+                  onBack={handleBackToCoach}
+                  onSessionComplete={(summary) => handleExerciseComplete(currentExercise.id, summary)}
+                />
+              )}
 
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowLineModal(false)}>Cancel</button>
-                <button type="submit" disabled={lineSubmitting || lineMoves.length === 0}>
-                  {lineSubmitting ? 'Adding...' : 'Add Line'}
-                </button>
-              </div>
-            </form>
+              {currentExercise.type === 'endgame' && (
+                <EndgameTrainer
+                  difficulty={currentExercise.difficulty}
+                  reviewMode={currentExercise.endgameReviewMode}
+                  coachingMessage={currentExercise.coachSays}
+                  successMetric={currentExercise.successMetric}
+                  onBack={handleBackToCoach}
+                  onSessionComplete={(summary) => handleExerciseComplete(currentExercise.id, summary)}
+                />
+              )}
+
+              {currentExercise.type === 'practice' && (
+                <CoachingGame
+                  difficulty={currentExercise.difficulty}
+                  coachingMessage={currentExercise.coachSays}
+                  successMetric={currentExercise.successMetric}
+                  onBack={handleBackToCoach}
+                  onGameOver={(summary) => handleExerciseComplete(currentExercise.id, summary)}
+                />
+              )}
+
+              {currentExercise.type === 'openings' && (
+                <div className={styles.openingsRedirect}>
+                  <p>Practice your opening lines to improve your first 10 moves.</p>
+                  <Link href={openingExerciseHref} className={styles.startBtn}>
+                    Go to Openings &rarr;
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </AppShell>
   );
 }

@@ -1,8 +1,18 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useMemo } from 'react';
 import { drawLineChart, ChartPoint } from '@/lib/chart';
 import styles from './RatingChart.module.css';
+
+type TimeRange = '7d' | '30d' | '1y' | 'all';
+
+function filterByRange(data: { rating: number; recorded_at: string }[], range: TimeRange) {
+  if (range === 'all') return data;
+  const now = Date.now();
+  const ms = range === '7d' ? 7 * 86400000 : range === '30d' ? 30 * 86400000 : 365 * 86400000;
+  const cutoff = now - ms;
+  return data.filter(d => new Date(d.recorded_at).getTime() >= cutoff);
+}
 
 interface Props {
   data: { rating: number; recorded_at: string }[];
@@ -12,10 +22,12 @@ interface Props {
 
 export default function RatingChart({ data, title, height = 200 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [range, setRange] = useState<TimeRange>('all');
+  const filteredData = useMemo(() => filterByRange(data, range), [data, range]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || data.length === 0) return;
+    if (!canvas || filteredData.length === 0) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -26,13 +38,13 @@ export default function RatingChart({ data, title, height = 200 }: Props) {
     canvas.height = height * dpr;
     ctx.scale(dpr, dpr);
 
-    const points: ChartPoint[] = data.map((d, i) => ({
+    const points: ChartPoint[] = filteredData.map((d, i) => ({
       x: i,
       y: d.rating,
       label: new Date(d.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     }));
 
-    const ratings = data.map(d => d.rating);
+    const ratings = filteredData.map(d => d.rating);
     const min = Math.min(...ratings);
     const max = Math.max(...ratings);
     const range = max - min;
@@ -45,9 +57,9 @@ export default function RatingChart({ data, title, height = 200 }: Props) {
       yMin: yMin || 1300,
       yMax: yMax || 1700,
       xLabels: points.map(p => p.label || ''),
-      showPoints: data.length <= 30,
+      showPoints: filteredData.length <= 30,
     });
-  }, [data, height]);
+  }, [filteredData, height]);
 
   if (data.length === 0) {
     return (
@@ -58,8 +70,8 @@ export default function RatingChart({ data, title, height = 200 }: Props) {
     );
   }
 
-  const currentRating = data[data.length - 1]?.rating;
-  const prevRating = data.length > 1 ? data[data.length - 2]?.rating : currentRating;
+  const currentRating = filteredData[filteredData.length - 1]?.rating;
+  const prevRating = filteredData.length > 1 ? filteredData[filteredData.length - 2]?.rating : currentRating;
   const change = currentRating - prevRating;
 
   return (
@@ -77,11 +89,26 @@ export default function RatingChart({ data, title, height = 200 }: Props) {
           </div>
         </div>
       )}
-      <canvas
-        ref={canvasRef}
-        className={styles.canvas}
-        style={{ height: `${height}px` }}
-      />
+      <div className={styles.rangeRow}>
+        {(['7d', '30d', '1y', 'all'] as TimeRange[]).map(r => (
+          <button
+            key={r}
+            className={`${styles.rangeBtn} ${range === r ? styles.rangeBtnActive : ''}`}
+            onClick={() => setRange(r)}
+          >
+            {r === '7d' ? '7D' : r === '30d' ? '30D' : r === '1y' ? '1Y' : 'All'}
+          </button>
+        ))}
+      </div>
+      {filteredData.length === 0 ? (
+        <p className={styles.empty}>No data in this range</p>
+      ) : (
+        <canvas
+          ref={canvasRef}
+          className={styles.canvas}
+          style={{ height: `${height}px` }}
+        />
+      )}
     </div>
   );
 }

@@ -128,11 +128,135 @@ export default function MultiplayerGamePage() {
 
   useEffect(() => { fetchGame(); }, [fetchGame]);
 
-  // Poll every 1 second
+  // SSE for real-time updates, with polling fallback
   useEffect(() => {
-    const interval = setInterval(fetchGame, 1000);
-    return () => clearInterval(interval);
-  }, [fetchGame]);
+    let eventSource: EventSource | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let cancelled = false;
+    let sseReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 5;
+
+    function handleGameUpdate(data: GameData) {
+      setGameData(data);
+      failCountRef.current = 0;
+      lastPollRef.current = Date.now();
+      setConnectionStatus('green');
+
+      if (data.fen !== prevFenRef.current && data.moves) {
+        const g = new Chess();
+        if (data.pgn) {
+          try { g.loadPgn(data.pgn); } catch { /* */ }
+        }
+        const h = g.history({ verbose: true });
+        if (h.length > 0) {
+          const last = h[h.length - 1];
+          setLastMove({ from: last.from, to: last.to });
+        }
+        prevFenRef.current = data.fen;
+      }
+      setLoading(false);
+    }
+
+    function stopPolling() {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    }
+
+    function startPolling() {
+      if (cancelled) return;
+      stopPolling();
+      pollInterval = setInterval(fetchGame, 1000);
+    }
+
+    function closeSSE() {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+    }
+
+    function startSSE() {
+      if (cancelled) return;
+      closeSSE();
+      stopPolling();
+
+      eventSource = new EventSource(`/api/multiplayer/${gameId}/sse`);
+      setConnectionStatus('green');
+
+      // Listen for game_state events (full game state updates)
+      eventSource.addEventListener('game_state', (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data) as GameData;
+          handleGameUpdate(data);
+          reconnectAttempts = 0;
+        } catch {
+          // Ignore parse errors
+        }
+      });
+
+      // Listen for move events
+      eventSource.addEventListener('move', () => {
+        // Move data is already handled by game_state, but this can be used
+        // for additional UI effects (sound, animation triggers) in the future
+      });
+
+      // Listen for game_over events
+      eventSource.addEventListener('game_over', () => {
+        // Game over is already handled by game_state update
+        // Close SSE since no more updates are expected
+        setTimeout(() => {
+          closeSSE();
+        }, 1000);
+      });
+
+      // Listen for draw_update events
+      eventSource.addEventListener('draw_update', () => {
+        // Draw updates are already handled by game_state
+      });
+
+      // Also handle generic messages as fallback
+      eventSource.onmessage = (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data) as GameData;
+          handleGameUpdate(data);
+        } catch {
+          // Ignore parse errors (e.g. heartbeat comments)
+        }
+      };
+
+      eventSource.onerror = () => {
+        closeSSE();
+        if (cancelled) return;
+
+        reconnectAttempts++;
+        setConnectionStatus('yellow');
+
+        if (reconnectAttempts <= MAX_RECONNECT_ATTEMPTS) {
+          // Exponential backoff reconnect: 1s, 2s, 4s, 8s, 16s
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 16000);
+          sseReconnectTimer = setTimeout(() => {
+            if (!cancelled) startSSE();
+          }, delay);
+        } else {
+          // Too many reconnect failures, fall back to polling
+          setConnectionStatus('yellow');
+          startPolling();
+        }
+      };
+    }
+
+    startSSE();
+
+    return () => {
+      cancelled = true;
+      closeSSE();
+      stopPolling();
+      if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+    };
+  }, [gameId, fetchGame]);
 
   const handleMove = useCallback(async (from: Square, to: Square, promotion?: PieceSymbol) => {
     if (!gameData || gameData.result !== 'in_progress') return;
@@ -192,6 +316,43 @@ export default function MultiplayerGamePage() {
         body: JSON.stringify({ action: 'decline_draw' }),
       });
       fetchGame();
+    } catch { /* silent */ }
+  }
+
+  async function handleReviewGame() {
+    if (!gameData) return;
+    try {
+      // Save multiplayer game to the games table for history/analysis
+      await fetch('/api/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pgn: gameData.pgn,
+          result: gameData.result,
+          movesCount: gameData.moves ? gameData.moves.split(',').length : 0,
+          opponent: isWhite ? gameData.black_username : gameData.white_username,
+        }),
+      });
+    } catch { /* continue to history even if save fails */ }
+    router.push('/history');
+  }
+
+  async function handleRematch() {
+    if (!gameData || !currentUserId) return;
+    const opponentId = isWhite ? gameData.black_user_id : gameData.white_user_id;
+    try {
+      const res = await fetch('/api/challenges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toUserId: opponentId,
+          colorPreference: isWhite ? 'black' : 'white', // swap colors
+          timeControl: gameData.time_control || 'none',
+        }),
+      });
+      if (res.ok) {
+        router.push('/multiplayer');
+      }
     } catch { /* silent */ }
   }
 
@@ -373,6 +534,16 @@ export default function MultiplayerGamePage() {
                 </button>
                 <button className={styles.resignBtn} onClick={handleResign}>
                   Resign
+                </button>
+              </>
+            )}
+            {isGameOver && isParticipant && (
+              <>
+                <button className={styles.reviewBtn} onClick={handleReviewGame}>
+                  Review Game
+                </button>
+                <button className={styles.btn} onClick={handleRematch}>
+                  Rematch
                 </button>
               </>
             )}

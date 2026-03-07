@@ -176,3 +176,18 @@
   font-size: 0.9rem;
   font-style: italic;
 }
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .activityChart {
+    overflow-x: auto;
+  }
+
+  .resultLegend {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}

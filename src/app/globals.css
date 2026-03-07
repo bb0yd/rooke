@@ -29,6 +29,27 @@
   --transition: 0.15s ease;
 }
 
+[data-theme="light"] {
+  --bg-primary: #f0eeeb;
+  --bg-secondary: #ffffff;
+  --bg-sidebar: #f5f3f0;
+  --bg-card: #ffffff;
+  --bg-hover: #e8e6e3;
+  --text-primary: #1a1917;
+  --text-secondary: #5c5955;
+  --text-muted: #8a8784;
+  --accent: #629924;
+  --accent-hover: #74b030;
+  --accent-dim: rgba(98, 153, 36, 0.12);
+  --danger: #cc3333;
+  --warning: #d4922e;
+  --info: #3b7db5;
+  --border: #d5d2cf;
+  --border-light: #c0bdb9;
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   background: var(--bg-primary);
@@ -188,11 +209,17 @@ a:hover {
   padding: 24px;
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
 .main-content-inner {
   width: 100%;
   max-width: 920px;
+  min-width: 0;
+}
+
+.main-content-inner-wide {
+  max-width: 1280px;
 }
 
 /* Placeholder pages */

@@ -16,13 +16,15 @@ import {
 } from '@/lib/trainerStats';
 import { calculateNextReview, performanceToQuality } from '@/lib/spacedRepetition';
 import { fireConfetti } from '@/lib/confetti';
+import { TrainingSessionSummary } from '@/lib/trainingSession';
 import styles from './OpeningTrainer.module.css';
 
 interface Props {
   opening: Opening;
+  initialMode?: PracticeMode;
 }
 
-type PracticeMode = 'sequential' | 'random' | 'weakspots' | 'review';
+export type PracticeMode = 'sequential' | 'random' | 'weakspots' | 'review';
 
 function buildGameAtMove(moves: string[], upTo: number): Chess {
   const g = new Chess();
@@ -122,12 +124,23 @@ function buildLineOrder(
   return shuffle(lines.map((_, i) => i));
 }
 
-export default function OpeningTrainer({ opening }: Props) {
+function deriveOpeningDifficulty(lines: Opening['lines']): number {
+  const averageLength = lines.length > 0
+    ? lines.reduce((sum, line) => sum + line.moves.length, 0) / lines.length
+    : 0;
+
+  if (averageLength >= 18) return 3;
+  if (averageLength >= 10) return 2;
+  return 1;
+}
+
+export default function OpeningTrainer({ opening, initialMode = 'sequential' }: Props) {
   const { playerColor, lines } = opening;
-  const [mode, setMode] = useState<PracticeMode>('sequential');
-  const [lineOrder, setLineOrder] = useState<number[]>(() => lines.map((_, i) => i));
+  const initialOrder = useMemo(() => buildLineOrder(initialMode, opening.id, lines), [initialMode, opening.id, lines]);
+  const [mode, setMode] = useState<PracticeMode>(initialMode);
+  const [lineOrder, setLineOrder] = useState<number[]>(() => initialOrder);
   const [orderPosition, setOrderPosition] = useState(0);
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const [currentLineIndex, setCurrentLineIndex] = useState(() => initialOrder[0] ?? 0);
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
   const [game, setGame] = useState<Chess>(() => new Chess());
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'complete' | null>(null);
@@ -150,6 +163,10 @@ export default function OpeningTrainer({ opening }: Props) {
   const [countdown, setCountdown] = useState(30);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const speedAdvanceRef = useRef<() => void>(() => {});
+  const sessionStartedAt = useRef(Date.now());
+  const sessionLogged = useRef(false);
+  const hintUses = useRef(0);
+  const dueLineIdsAtSessionStart = useRef<Set<string>>(new Set());
 
   const line = lines[currentLineIndex];
   const isPlayerTurn = (currentMoveIndex % 2 === 0) === (playerColor === 'w');
@@ -168,6 +185,17 @@ export default function OpeningTrainer({ opening }: Props) {
   useEffect(() => {
     refreshStats();
   }, [refreshStats]);
+
+  useEffect(() => {
+    const dueSet = new Set<string>();
+    for (const ln of lines) {
+      const stats = getLineStats(opening.id, ln.id);
+      if (isDueForReview(stats)) {
+        dueSet.add(ln.id);
+      }
+    }
+    dueLineIdsAtSessionStart.current = dueSet;
+  }, [lines, opening.id, refreshStats]);
 
   // Speed mode countdown timer
   useEffect(() => {
@@ -304,7 +332,7 @@ export default function OpeningTrainer({ opening }: Props) {
     return () => {
       if (autoPlayTimer.current) clearTimeout(autoPlayTimer.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only initialization
 
   // Record stats and advance when line completes
   const onLineComplete = useCallback((hadMistake: boolean) => {
@@ -384,11 +412,32 @@ export default function OpeningTrainer({ opening }: Props) {
     }
   }, [game, currentMoveIndex, line, isComplete, isPlayerTurn, isViewing, autoPlayOpponent, currentLineIndex, hadMistakeThisLine, onLineComplete]);
 
+  function reorderLine(fromIdx: number, toIdx: number) {
+    // Reorder lines via API if it's a custom opening (numeric ID)
+    if (/^\d+$/.test(opening.id) && lines[fromIdx]?.id && lines[toIdx]?.id) {
+      fetch(`/api/openings/${opening.id}/reorder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lineId: lines[fromIdx].id, newIndex: toIdx }),
+      }).catch(() => {});
+    }
+    // Swap in local state — the parent passes `lines` as a prop so we
+    // swap in lineOrder which controls practice sequence
+    const newOrder = [...lineOrder];
+    const posA = newOrder.indexOf(fromIdx);
+    const posB = newOrder.indexOf(toIdx);
+    if (posA !== -1 && posB !== -1) {
+      [newOrder[posA], newOrder[posB]] = [newOrder[posB], newOrder[posA]];
+      setLineOrder(newOrder);
+    }
+  }
+
   function showHint() {
     const san = line.moves[currentMoveIndex];
     const isPlayer = (currentMoveIndex % 2 === 0) === (playerColor === 'w');
     setHintText(describeMove(san, isPlayer));
     setHadMistakeThisLine(true); // using a hint counts as not clean
+    hintUses.current += 1;
 
     // Highlight the source square of the expected move
     const testGame = buildGameAtMove(line.moves, currentMoveIndex);
@@ -422,6 +471,12 @@ export default function OpeningTrainer({ opening }: Props) {
     setSessionClean(0);
     setSessionMistakes(0);
     setSessionDone(false);
+    hintUses.current = 0;
+    sessionLogged.current = false;
+    sessionStartedAt.current = Date.now();
+    dueLineIdsAtSessionStart.current = new Set(
+      lines.filter(ln => isDueForReview(getLineStats(opening.id, ln.id))).map(ln => ln.id)
+    );
     initLine(order[0]);
   }
 
@@ -536,6 +591,49 @@ export default function OpeningTrainer({ opening }: Props) {
     const s = lineStatsMap[ln.id];
     return s && isStruggling(s);
   }).length;
+
+  useEffect(() => {
+    if (!sessionDone || sessionLogged.current) return;
+
+    sessionLogged.current = true;
+    const totalDone = sessionClean + sessionMistakes;
+    const completedLineIds = [...completedLines]
+      .map(index => lines[index]?.id)
+      .filter((lineId): lineId is string => Boolean(lineId));
+    const dueLinesReviewed = completedLineIds.filter(lineId => dueLineIdsAtSessionStart.current.has(lineId)).length;
+    const summary: TrainingSessionSummary = {
+      score: totalDone > 0 ? sessionClean / totalDone : 0,
+      attempts: totalDone,
+      successes: sessionClean,
+      firstTrySuccesses: sessionClean,
+      hintsUsed: hintUses.current,
+      elapsedMs: Date.now() - sessionStartedAt.current,
+      metadata: {
+        trainer: 'opening',
+        openingId: opening.id,
+        mode,
+        dueLinesReviewed,
+        strugglingLinesInOpening: strugglingCount,
+      },
+    };
+
+    fetch('/api/training-sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        module: 'openings',
+        exerciseType: `${opening.id}:${mode}`,
+        difficulty: deriveOpeningDifficulty(lines),
+        score: summary.score,
+        attempts: summary.attempts,
+        successes: summary.successes,
+        firstTrySuccesses: summary.firstTrySuccesses,
+        hintsUsed: summary.hintsUsed,
+        elapsedMs: summary.elapsedMs,
+        metadata: summary.metadata,
+      }),
+    }).catch(() => {});
+  }, [completedLines, lines, mode, opening.id, sessionClean, sessionDone, sessionMistakes, strugglingCount]);
 
   if (sessionDone) {
     const totalDone = sessionClean + sessionMistakes;
@@ -656,20 +754,35 @@ export default function OpeningTrainer({ opening }: Props) {
             {lines.map((ln, idx) => {
               const dot = getLineDot(ln.id);
               return (
-                <button
-                  key={ln.id}
-                  className={`${styles.lineBtn} ${idx === currentLineIndex ? styles.lineBtnActive : ''} ${completedLines.has(idx) ? styles.lineBtnComplete : ''}`}
-                  onClick={() => {
-                    const pos = lineOrder.indexOf(idx);
-                    if (pos !== -1) setOrderPosition(pos);
-                    initLine(idx);
-                  }}
-                >
-                  {dot && (
-                    <span className={`${styles.lineDot} ${dot === 'mastered' ? styles.lineDotMastered : styles.lineDotStruggling}`} />
-                  )}
-                  {ln.name}
-                </button>
+                <div key={ln.id} className={styles.lineRow}>
+                  <button
+                    className={`${styles.lineBtn} ${idx === currentLineIndex ? styles.lineBtnActive : ''} ${completedLines.has(idx) ? styles.lineBtnComplete : ''}`}
+                    onClick={() => {
+                      const pos = lineOrder.indexOf(idx);
+                      if (pos !== -1) setOrderPosition(pos);
+                      initLine(idx);
+                    }}
+                  >
+                    {dot && (
+                      <span className={`${styles.lineDot} ${dot === 'mastered' ? styles.lineDotMastered : styles.lineDotStruggling}`} />
+                    )}
+                    {ln.name}
+                  </button>
+                  <div className={styles.lineReorder}>
+                    <button
+                      className={styles.reorderBtn}
+                      onClick={(e) => { e.stopPropagation(); if (idx > 0) reorderLine(idx, idx - 1); }}
+                      disabled={idx === 0}
+                      title="Move up"
+                    >&#x25B2;</button>
+                    <button
+                      className={styles.reorderBtn}
+                      onClick={(e) => { e.stopPropagation(); if (idx < lines.length - 1) reorderLine(idx, idx + 1); }}
+                      disabled={idx === lines.length - 1}
+                      title="Move down"
+                    >&#x25BC;</button>
+                  </div>
+                </div>
               );
             })}
           </div>

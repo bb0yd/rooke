@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import styles from './multiplayer.module.css';
@@ -57,6 +57,9 @@ function MultiplayerPage() {
   const [games, setGames] = useState<MultiplayerGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [quickPlayTC, setQuickPlayTC] = useState('10+0');
+  const [quickPlaySearching, setQuickPlaySearching] = useState(false);
+  const quickPlayIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Get current user
   useEffect(() => {
@@ -113,6 +116,50 @@ function MultiplayerPage() {
       .then(d => { if (Array.isArray(d)) setUsers(d); })
       .catch(() => {});
   }, [search]);
+
+  async function startQuickPlay() {
+    setQuickPlaySearching(true);
+    try {
+      const res = await fetch('/api/multiplayer/quick-play', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timeControl: quickPlayTC, colorPreference: 'random' }),
+      });
+      const data = await res.json();
+      if (data.matched && data.gameId) {
+        router.push(`/multiplayer/${data.gameId}`);
+        return;
+      }
+      // Start polling
+      quickPlayIntervalRef.current = setInterval(async () => {
+        try {
+          const r = await fetch('/api/multiplayer/quick-play');
+          const d = await r.json();
+          if (d.matched && d.gameId) {
+            cancelQuickPlay();
+            router.push(`/multiplayer/${d.gameId}`);
+          }
+        } catch {}
+      }, 2000);
+    } catch {
+      setQuickPlaySearching(false);
+    }
+  }
+
+  function cancelQuickPlay() {
+    setQuickPlaySearching(false);
+    if (quickPlayIntervalRef.current) {
+      clearInterval(quickPlayIntervalRef.current);
+      quickPlayIntervalRef.current = null;
+    }
+    fetch('/api/multiplayer/quick-play', { method: 'DELETE' }).catch(() => {});
+  }
+
+  useEffect(() => {
+    return () => {
+      if (quickPlayIntervalRef.current) clearInterval(quickPlayIntervalRef.current);
+    };
+  }, []);
 
   async function sendChallenge() {
     if (!selectedUser) return;
@@ -182,6 +229,39 @@ function MultiplayerPage() {
     <AppShell>
       <div className={styles.page}>
         <h1 className={styles.title}>Multiplayer</h1>
+
+        {/* Quick Play */}
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Quick Play</h2>
+          <div className={styles.quickPlaySection}>
+            {!quickPlaySearching ? (
+              <>
+                <div className={styles.quickPlayChips}>
+                  {['1+0', '3+0', '3+2', '5+0', '5+3', '10+0'].map(tc => (
+                    <button
+                      key={tc}
+                      className={`${styles.quickPlayChip} ${quickPlayTC === tc ? styles.quickPlayChipActive : ''}`}
+                      onClick={() => setQuickPlayTC(tc)}
+                    >
+                      {tc}
+                    </button>
+                  ))}
+                </div>
+                <button className={styles.quickPlayBtn} onClick={startQuickPlay}>
+                  Find Game
+                </button>
+              </>
+            ) : (
+              <div className={styles.quickPlaySearching}>
+                <div className={styles.quickPlaySpinner} />
+                <span>Searching for opponent ({quickPlayTC})...</span>
+                <button className={styles.quickPlayCancelBtn} onClick={cancelQuickPlay}>
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Incoming challenges */}
         {incoming.length > 0 && (

@@ -42,17 +42,25 @@ export default function MoveTree({ moves, totalLines, onSelectMove }: Props) {
             onClick={() => onSelectMove(move.uci)}
           >
             <span className={styles.moveSan}>{move.san}</span>
-            <span className={styles.moveGames}>{total}</span>
+            <span className={styles.moveGames}>{total.toLocaleString()}</span>
             <div className={styles.bar}>
-              <div className={styles.barWhite} style={{ width: `${pct}%` }}>
-                {move.openings && move.openings.length > 0 && (
-                  <span className={styles.barLabel}>
-                    {move.openings.length <= 2
-                      ? move.openings.join(', ')
-                      : `${move.openings[0]} +${move.openings.length - 1}`}
-                  </span>
-                )}
-              </div>
+              {total > 0 && (move.white > 0 || move.draws > 0 || move.black > 0) && (move.white + move.draws + move.black) > 1 ? (
+                <>
+                  <div className={styles.barW} style={{ width: `${(move.white / total) * 100}%` }} />
+                  <div className={styles.barD} style={{ width: `${(move.draws / total) * 100}%` }} />
+                  <div className={styles.barB} style={{ width: `${(move.black / total) * 100}%` }} />
+                </>
+              ) : (
+                <div className={styles.barWhite} style={{ width: `${pct}%` }}>
+                  {move.openings && move.openings.length > 0 && (
+                    <span className={styles.barLabel}>
+                      {move.openings.length <= 2
+                        ? move.openings.join(', ')
+                        : `${move.openings[0]} +${move.openings.length - 1}`}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );

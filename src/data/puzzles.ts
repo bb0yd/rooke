@@ -26,7 +26,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p002',
-    fen: 'rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2',
+    fen: 'rnbqkbnr/pppp1ppp/8/4p3/6P1/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 2',
     moves: ['b1c3', 'd8h4'],
     rating: 400,
     themes: ['mate-in-1'],
@@ -34,7 +34,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p003',
-    fen: '6k1/5ppp/8/8/8/8/r4PPP/4R1K1 w - - 0 1',
+    fen: '6k1/5ppp/8/8/8/8/r4PPP/4R1K1 b - - 0 1',
     moves: ['a2a6', 'e1e8'],
     rating: 500,
     themes: ['mate-in-1', 'back-rank'],
@@ -42,7 +42,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p004',
-    fen: '5rk1/5ppp/8/8/8/8/Q4PPP/6K1 w - - 0 1',
+    fen: '5rk1/5ppp/8/8/8/8/Q4PPP/6K1 b - - 0 1',
     moves: ['f8e8', 'a2a8'],
     rating: 550,
     themes: ['mate-in-1', 'back-rank'],
@@ -50,7 +50,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p005',
-    fen: '3qk3/8/8/8/8/8/8/4K2R w K - 0 1',
+    fen: '3qk3/8/8/8/8/8/8/4K2R b K - 0 1',
     moves: ['d8d7', 'h1h8'],
     rating: 450,
     themes: ['mate-in-1', 'back-rank'],
@@ -58,7 +58,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p006',
-    fen: '6k1/5p1p/6p1/8/8/8/r4PPP/4R1K1 w - - 0 1',
+    fen: '6k1/5p1p/6p1/8/8/8/r4PPP/4R1K1 b - - 0 1',
     moves: ['a2a5', 'e1e8'],
     rating: 550,
     themes: ['mate-in-1', 'back-rank'],
@@ -66,7 +66,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p007',
-    fen: '2k5/ppp5/8/8/8/8/5PPP/4R1K1 w - - 0 1',
+    fen: '2k5/ppp5/8/8/8/8/5PPP/4R1K1 b - - 0 1',
     moves: ['a7a6', 'e1e8'],
     rating: 500,
     themes: ['mate-in-1', 'back-rank'],
@@ -74,7 +74,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p008',
-    fen: '5k2/8/5K2/8/8/8/8/4R3 w - - 0 1',
+    fen: '5k2/8/5K2/8/8/8/8/4R3 b - - 0 1',
     moves: ['f8g8', 'e1e8'],
     rating: 450,
     themes: ['mate-in-1', 'endgame'],
@@ -90,7 +90,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p010',
-    fen: 'r5k1/5ppp/8/4N3/8/8/5PPP/6K1 w - - 0 1',
+    fen: 'r5k1/5ppp/8/4N3/8/8/5PPP/6K1 b - - 0 1',
     moves: ['a8b8', 'e5f7'],
     rating: 650,
     themes: ['fork'],
@@ -98,7 +98,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p011',
-    fen: '5rk1/pp3ppp/8/3N4/8/8/PPP2PPP/5RK1 w - - 0 1',
+    fen: '5rk1/pp3ppp/8/3N4/8/8/PPP2PPP/5RK1 b - - 0 1',
     moves: ['f8e8', 'd5e7'],
     rating: 700,
     themes: ['fork'],
@@ -154,7 +154,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p018',
-    fen: '6k1/5ppp/8/8/1b6/8/PPP2PPP/R1B3K1 w - - 0 1',
+    fen: '6k1/5ppp/8/8/1b6/8/PPP2PPP/R1B3K1 b - - 0 1',
     moves: ['b4a5', 'c1g5'],
     rating: 850,
     themes: ['double-attack'],
@@ -162,8 +162,8 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p019',
-    fen: 'rnb1kbnr/pppp1ppp/8/4p3/4PP1q/8/PPPP2PP/RNBQKBNR w KQkq - 1 3',
-    moves: ['b1c3', 'g2g3'],
+    fen: 'rnbqkbnr/pppp1ppp/8/4p3/4PP2/8/PPPP2PP/RNBQKBNR b KQkq - 0 2',
+    moves: ['d8h4', 'g2g3'],
     rating: 750,
     themes: ['trapped-piece'],
     difficulty: 'easy',
@@ -178,7 +178,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p021',
-    fen: '6k1/5ppp/8/3r4/8/8/5PPP/3R2K1 w - - 0 1',
+    fen: '6k1/5ppp/8/3r4/8/8/5PPP/3R2K1 b - - 0 1',
     moves: ['d5a5', 'd1d8'],
     rating: 600,
     themes: ['back-rank', 'mate-in-1'],
@@ -218,7 +218,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p026',
-    fen: '2r3k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1',
+    fen: '2r3k1/5ppp/8/8/8/8/5PPP/R5K1 b - - 0 1',
     moves: ['c8c2', 'a1a8'],
     rating: 700,
     themes: ['mate-in-1', 'back-rank'],
@@ -234,7 +234,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p028',
-    fen: '1k1r4/pp4pp/8/8/8/8/PPP2PPP/2KR4 w - - 0 1',
+    fen: '1k1r4/pp4pp/8/8/8/8/PPP2PPP/2KR4 b - - 0 1',
     moves: ['d8d7', 'd1d7'],
     rating: 950,
     themes: ['pin', 'endgame'],
@@ -271,7 +271,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p032',
-    fen: '3r2k1/pp3ppp/8/3Q4/8/8/PPP2PPP/6K1 w - - 0 1',
+    fen: '3r2k1/pp3ppp/8/3Q4/8/8/PPP2PPP/6K1 b - - 0 1',
     moves: ['d8d7', 'd5d7'],
     rating: 1000,
     themes: ['pin', 'endgame'],
@@ -287,7 +287,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p034',
-    fen: 'r3r1k1/ppp2ppp/2n5/3N4/8/8/PPP2PPP/R3R1K1 w - - 0 1',
+    fen: 'r3r1k1/ppp2ppp/2n5/3N4/8/8/PPP2PPP/R3R1K1 b - - 0 1',
     moves: ['c6d4', 'e1e8'],
     rating: 1200,
     themes: ['back-rank', 'fork'],
@@ -351,7 +351,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p042',
-    fen: '2rq1rk1/pp2bppp/2n1pn2/3p4/3P1B2/2NBPN2/PP3PPP/R2Q1RK1 b - - 0 10',
+    fen: '2rq1rk1/pp2bppp/2n1pn2/3p4/5B2/2NBPN2/PP3PPP/R2Q1RK1 b - - 0 10',
     moves: ['d5d4', 'f4h6'],
     rating: 1250,
     themes: ['sacrifice', 'double-attack'],
@@ -575,7 +575,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p070',
-    fen: 'r2q1rk1/1b2bppp/p1n1pn2/1p1p4/3P1B2/1BN1PN2/PP3PPP/R2Q1RK1 b - - 0 10',
+    fen: 'r2q1rk1/1b2bppp/p1n1pn2/1p1p4/5B2/1BN1PN2/PP3PPP/R2Q1RK1 b - - 0 10',
     moves: ['d5d4', 'f4h6'],
     rating: 1350,
     themes: ['sacrifice', 'double-attack'],
@@ -693,7 +693,7 @@ export const PUZZLES: Puzzle[] = [
   {
     id: 'p084',
     fen: '3r2k1/1p3ppp/p1b1pn2/2q5/4N3/1P2B3/P1P2PPP/R2Q2K1 b - - 0 17',
-    moves: ['c5c7', 'e4f6'],
+    moves: ['c5b6', 'e4f6'],
     rating: 1500,
     themes: ['fork', 'discovered-attack'],
     difficulty: 'hard',
@@ -732,7 +732,7 @@ export const PUZZLES: Puzzle[] = [
   },
   {
     id: 'p089',
-    fen: 'r2qr1k1/pp2bppp/2n1bn2/3p4/3P1B2/2NBPN2/PP3PPP/R2Q1RK1 b - - 0 9',
+    fen: 'r2qr1k1/pp2bppp/2n1bn2/3p4/5B2/2NBPN2/PP3PPP/R2Q1RK1 b - - 0 9',
     moves: ['d5d4', 'f3e5'],
     rating: 1500,
     themes: ['fork', 'double-attack'],
@@ -781,7 +781,7 @@ export const PUZZLES: Puzzle[] = [
   {
     id: 'p095',
     fen: '2r1r1k1/1b1qbppp/p1nppn2/1p6/3NP1P1/1BN1B2P/PPP2P2/R2Q1RK1 b - - 0 13',
-    moves: ['d7c8', 'g4g5'],
+    moves: ['d7d8', 'g4g5'],
     rating: 2000,
     themes: ['fork', 'sacrifice'],
     difficulty: 'hard',

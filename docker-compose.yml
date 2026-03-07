@@ -11,6 +11,11 @@ services:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rooke"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   app:
     build: .
@@ -25,7 +30,8 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD:-rookechess}
       JWT_SECRET: ${JWT_SECRET:-change-me-to-something-secret}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:

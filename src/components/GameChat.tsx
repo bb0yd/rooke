@@ -13,9 +13,10 @@ interface ChatMessage {
 interface Props {
   gameId: string;
   currentUsername: string;
+  readOnly?: boolean;
 }
 
-export default function GameChat({ gameId, currentUsername }: Props) {
+export default function GameChat({ gameId, currentUsername, readOnly = false }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [collapsed, setCollapsed] = useState(false);
@@ -84,17 +85,19 @@ export default function GameChat({ gameId, currentUsername }: Props) {
           ))
         )}
       </div>
-      <form className={styles.inputRow} onSubmit={sendMessage}>
-        <input
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          placeholder="Type a message..."
-          className={styles.input}
-          maxLength={500}
-        />
-        <button type="submit" className={styles.sendBtn} disabled={!input.trim()}>Send</button>
-      </form>
+      {!readOnly && (
+        <form className={styles.inputRow} onSubmit={sendMessage}>
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Type a message..."
+            className={styles.input}
+            maxLength={500}
+          />
+          <button type="submit" className={styles.sendBtn} disabled={!input.trim()}>Send</button>
+        </form>
+      )}
     </div>
   );
 }

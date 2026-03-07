@@ -180,6 +180,11 @@ export default function ChessBoard({
     if (externalTheme) setCurrentTheme(externalTheme);
   }, [externalTheme]);
 
+  // Reset orientation when a parent-driven board changes sides between exercises.
+  useEffect(() => {
+    setFlipped(initialFlipped);
+  }, [initialFlipped]);
+
   // Detect board changes and trigger animation (useLayoutEffect to avoid ghost frame)
   useLayoutEffect(() => {
     const currentBoard = snapshotBoard(activeGame);
@@ -385,6 +390,22 @@ export default function ChessBoard({
     const actualRow = flipped ? row : 7 - row;
     return coordsToSquare(actualCol, actualRow);
   }, [flipped]);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    const tag = (e.target as HTMLElement).tagName?.toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+
+    if (e.key === 'f' && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      setFlipped(f => !f);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setSelectedSquare(null);
+      setPendingPromotion(null);
+      setPreMoveFrom(null);
+      setPreMoveTo(null);
+    }
+  }
 
   function handlePointerDown(e: React.PointerEvent) {
     if (pendingPromotion) return;
@@ -599,6 +620,8 @@ export default function ChessBoard({
             <div
               className={styles.board}
               ref={boardRef}
+              tabIndex={0}
+              onKeyDown={handleKeyDown}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}

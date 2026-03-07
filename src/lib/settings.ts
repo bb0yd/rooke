@@ -1,5 +1,6 @@
 export type SoundPack = 'standard' | 'nes' | 'synth' | 'none';
 export type PieceSet = 'standard' | 'modern' | 'classic' | 'pixel';
+export type Theme = 'dark' | 'light' | 'system';
 
 export interface NotificationPrefs {
   challenges: boolean;
@@ -16,6 +17,8 @@ export interface UserSettings {
   animationSpeed: number; // ms (0 = none, 150 = normal, 300 = slow)
   notificationPrefs: NotificationPrefs;
   blindfoldMode: boolean;
+  theme: Theme;
+  boardFlipped: boolean;
 }
 
 const STORAGE_KEY = 'userSettings';
@@ -29,6 +32,8 @@ const DEFAULTS: UserSettings = {
   animationSpeed: 150,
   notificationPrefs: { challenges: true, friendRequests: true, gameUpdates: true },
   blindfoldMode: false,
+  theme: 'dark',
+  boardFlipped: false,
 };
 
 export function getSettings(): UserSettings {

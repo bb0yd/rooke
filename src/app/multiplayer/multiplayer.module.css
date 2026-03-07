@@ -325,3 +325,94 @@
 .msgError {
   color: var(--danger);
 }
+
+/* Quick Play */
+.quickPlaySection {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+}
+
+.quickPlayChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.quickPlayChip {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.quickPlayChip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.quickPlayChipActive {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.quickPlayBtn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px 28px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.quickPlayBtn:hover {
+  background: var(--accent-hover);
+}
+
+.quickPlaySearching {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.quickPlaySpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: qpSpin 0.8s linear infinite;
+}
+
+@keyframes qpSpin {
+  to { transform: rotate(360deg); }
+}
+
+.quickPlayCancelBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.quickPlayCancelBtn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}

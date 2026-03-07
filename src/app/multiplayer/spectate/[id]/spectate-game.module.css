@@ -1,0 +1,170 @@
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.liveBadge {
+  background: #2d5a2d;
+  color: #6fcf6f;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.flipBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flipBtn:hover {
+  background: var(--bg-hover);
+}
+
+.layout {
+  display: flex;
+  gap: 24px;
+}
+
+.boardColumn {
+  flex: 0 0 auto;
+}
+
+.spectateBoard {
+  max-width: 480px;
+}
+
+.playerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.playerName {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.capturedRow {
+  display: flex;
+  gap: 1px;
+}
+
+.capturedPiece {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.capturedPiece :global(svg) {
+  width: 100%;
+  height: 100%;
+}
+
+.panel {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.timeControl {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.moveList {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  max-height: 400px;
+}
+
+.moveRow {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 0.9rem;
+}
+
+.moveNum {
+  color: var(--text-muted);
+  min-width: 28px;
+  text-align: right;
+}
+
+.move {
+  color: var(--text-primary);
+  min-width: 50px;
+}
+
+.noMoves {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px 0;
+  font-size: 0.9rem;
+}
+
+.loading {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 60px 0;
+}
+
+.error {
+  color: var(--danger);
+  text-align: center;
+  padding: 60px 0;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+  }
+
+  .moveList {
+    max-height: 200px;
+  }
+}

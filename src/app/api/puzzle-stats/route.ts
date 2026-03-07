@@ -9,7 +9,7 @@ function getUserId(req: NextRequest): number | null {
   return payload?.userId ?? null;
 }
 
-// GET: Get all puzzle stats for user
+// GET: Get all puzzle stats for user, keyed by puzzle_id
 export async function GET(req: NextRequest) {
   const userId = getUserId(req);
   if (!userId) {
@@ -21,10 +21,20 @@ export async function GET(req: NextRequest) {
     [userId]
   );
 
-  return NextResponse.json(result.rows);
+  // Return as a map keyed by puzzle_id (what the UI expects)
+  const statsMap: Record<string, { attempts: number; solves: number; best_time_ms: number | null }> = {};
+  for (const row of result.rows) {
+    statsMap[row.puzzle_id] = {
+      attempts: row.attempts,
+      solves: row.solves,
+      best_time_ms: row.best_time_ms,
+    };
+  }
+
+  return NextResponse.json(statsMap);
 }
 
-// POST: Record a puzzle attempt
+// POST: Record a puzzle attempt, return updated stats for that puzzle
 export async function POST(req: NextRequest) {
   const userId = getUserId(req);
   if (!userId) {
@@ -56,5 +66,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ success: true });
+  // Return the updated stats for this puzzle (what the UI expects)
+  const result = await pool.query(
+    'SELECT attempts, solves, best_time_ms FROM puzzle_stats WHERE user_id = $1 AND puzzle_id = $2',
+    [userId, puzzleId]
+  );
+
+  return NextResponse.json(result.rows[0] || { attempts: 0, solves: 0, best_time_ms: null });
 }

@@ -80,6 +80,18 @@
   justify-content: center;
 }
 
+.barW {
+  background: #f0f0f0;
+}
+
+.barD {
+  background: #888;
+}
+
+.barB {
+  background: #333;
+}
+
 .empty {
   color: var(--text-muted);
   font-size: 0.9rem;

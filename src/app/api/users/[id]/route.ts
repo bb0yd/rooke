@@ -17,7 +17,7 @@ export async function GET(
   const { id } = await params;
 
   const result = await pool.query(
-    'SELECT id, username, display_name, bio, created_at FROM users WHERE id = $1',
+    'SELECT id, username, display_name, bio, avatar_url, created_at FROM users WHERE id = $1',
     [id]
   );
 

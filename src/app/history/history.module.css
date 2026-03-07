@@ -383,6 +383,10 @@
 }
 
 /* Move classification colors */
+.moveBrilliant {
+  color: #26c6da !important;
+}
+
 .moveInaccuracy {
   color: var(--warning) !important;
 }
@@ -395,6 +399,52 @@
   color: var(--danger) !important;
 }
 
+/* Best move panel */
+.bestMovePanel {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-top: 4px;
+}
+
+.bestMoveHeader {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.bestMoveContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bestMoveLabel {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.bestMoveSan {
+  color: #4a9eff;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.bestMoveEval {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.moveBestHint {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
 .autoPlaySelect {
   background: var(--bg-card);
   color: var(--text-primary);
@@ -403,4 +453,30 @@
   border-radius: 4px;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .reviewLayout {
+    flex-direction: column;
+    height: auto;
+    overflow: auto;
+    width: 100%;
+  }
+
+  .reviewBoard {
+    --sq: min(calc((100vw - 32px) / 8), 60px) !important;
+  }
+
+  .panel {
+    width: 100%;
+  }
+
+  .evalColumn {
+    display: none;
+  }
+
+  .boardColumn {
+    width: 100%;
+  }
 }

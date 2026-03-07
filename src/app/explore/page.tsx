@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Chess, Square, PieceSymbol } from 'chess.js';
 import AppShell from '@/components/AppShell';
 import ChessBoard from '@/components/ChessBoard';
@@ -41,6 +41,10 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [repertoireStatus, setRepertoireStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const repertoireTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dbSource, setDbSource] = useState<'local' | 'lichess'>('local');
+
   // Move history for breadcrumbs
   const history = game.history({ verbose: true });
   const sanHistory = game.history();
@@ -51,15 +55,37 @@ export default function ExplorePage() {
     if (s.boardTheme) setCurrentTheme(s.boardTheme);
   }, []);
 
-  // Fetch explore data whenever position changes
-  const fetchExploreData = useCallback(async (fen: string) => {
+  // Fetch explore data whenever position or source changes
+  const fetchExploreData = useCallback(async (fen: string, source: 'local' | 'lichess') => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/openings/explore?fen=${encodeURIComponent(fen)}`);
-      if (!res.ok) throw new Error('Failed to fetch opening data');
-      const data: ExploreData = await res.json();
-      setExploreData(data);
+      if (source === 'lichess') {
+        const res = await fetch(
+          `https://explorer.lichess.ovh/lichess?fen=${encodeURIComponent(fen)}&ratings=1600,1800,2000,2200,2500&speeds=blitz,rapid,classical`
+        );
+        if (!res.ok) throw new Error('Failed to fetch Lichess data');
+        const data = await res.json();
+        const moves: MoveData[] = (data.moves || []).map((m: any) => ({
+          uci: m.uci,
+          san: m.san,
+          white: m.white || 0,
+          draws: m.draws || 0,
+          black: m.black || 0,
+        }));
+        setExploreData({
+          white: data.white || 0,
+          draws: data.draws || 0,
+          black: data.black || 0,
+          moves,
+          opening: data.opening ? { name: data.opening.name } : undefined,
+        });
+      } else {
+        const res = await fetch(`/api/openings/explore?fen=${encodeURIComponent(fen)}`);
+        if (!res.ok) throw new Error('Failed to fetch opening data');
+        const data: ExploreData = await res.json();
+        setExploreData(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
       setExploreData(null);
@@ -69,8 +95,8 @@ export default function ExplorePage() {
   }, []);
 
   useEffect(() => {
-    fetchExploreData(game.fen());
-  }, [game, fetchExploreData]);
+    fetchExploreData(game.fen(), dbSource);
+  }, [game, dbSource, fetchExploreData]);
 
   // Handle move made on the board
   const handleMove = useCallback((from: Square, to: Square, promotion?: PieceSymbol) => {
@@ -139,6 +165,36 @@ export default function ExplorePage() {
 
   const turn = game.turn() === 'w' ? 'White' : 'Black';
 
+  async function handleAddToRepertoire() {
+    if (history.length === 0) return;
+    setRepertoireStatus('saving');
+    try {
+      const openingName = exploreData?.opening?.name || `Custom Line: ${sanHistory.slice(0, 4).join(' ')}`;
+      const playerColor = history[0].color; // color of the first move
+      const moves = sanHistory;
+      const res = await fetch('/api/openings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: openingName,
+          description: `Added from explorer: ${sanHistory.join(' ')}`,
+          playerColor,
+          thumbnailFen: game.fen(),
+          lines: [{ name: 'Main Line', moves }],
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to save');
+      }
+      setRepertoireStatus('saved');
+    } catch {
+      setRepertoireStatus('error');
+    }
+    if (repertoireTimerRef.current) clearTimeout(repertoireTimerRef.current);
+    repertoireTimerRef.current = setTimeout(() => setRepertoireStatus('idle'), 3000);
+  }
+
   return (
     <AppShell>
       <div className={styles.layout}>
@@ -186,12 +242,41 @@ export default function ExplorePage() {
             )}
           </div>
 
+          {/* Database source toggle */}
+          <div className={styles.dbToggle}>
+            <button
+              className={`${styles.dbToggleBtn} ${dbSource === 'local' ? styles.dbToggleBtnActive : ''}`}
+              onClick={() => setDbSource('local')}
+            >
+              Local
+            </button>
+            <button
+              className={`${styles.dbToggleBtn} ${dbSource === 'lichess' ? styles.dbToggleBtnActive : ''}`}
+              onClick={() => setDbSource('lichess')}
+            >
+              Lichess
+            </button>
+          </div>
+
           {/* Position stats summary */}
           {exploreData && totalGames > 0 && (
             <div className={styles.positionStats}>
               <span className={styles.statTotal}>
-                {totalGames} opening {totalGames === 1 ? 'line' : 'lines'} through this position
+                {totalGames.toLocaleString()} {dbSource === 'lichess' ? 'games' : (totalGames === 1 ? 'line' : 'lines')}
               </span>
+              {dbSource === 'lichess' && totalGames > 0 && (
+                <div className={styles.wdlBar}>
+                  <div className={styles.wdlW} style={{ width: `${(exploreData.white / totalGames) * 100}%` }}>
+                    {Math.round((exploreData.white / totalGames) * 100)}%
+                  </div>
+                  <div className={styles.wdlD} style={{ width: `${(exploreData.draws / totalGames) * 100}%` }}>
+                    {Math.round((exploreData.draws / totalGames) * 100)}%
+                  </div>
+                  <div className={styles.wdlB} style={{ width: `${(exploreData.black / totalGames) * 100}%` }}>
+                    {Math.round((exploreData.black / totalGames) * 100)}%
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -243,10 +328,14 @@ export default function ExplorePage() {
               <div className={styles.toolSpacer} />
               <button
                 className={`${styles.toolBtn} ${styles.repertoireBtn}`}
-                disabled={history.length === 0}
+                disabled={history.length === 0 || repertoireStatus === 'saving'}
                 title="Add current line to your repertoire"
+                onClick={handleAddToRepertoire}
               >
-                + Repertoire
+                {repertoireStatus === 'saving' ? 'Saving...' :
+                 repertoireStatus === 'saved' ? 'Saved!' :
+                 repertoireStatus === 'error' ? 'Failed' :
+                 '+ Repertoire'}
               </button>
             </div>
           </div>

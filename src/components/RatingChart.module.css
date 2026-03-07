@@ -53,3 +53,31 @@
   text-align: center;
   padding: 30px;
 }
+
+.rangeRow {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.rangeBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 3px 10px;
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.rangeBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.rangeBtnActive {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}

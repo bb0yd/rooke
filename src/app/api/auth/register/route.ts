@@ -10,8 +10,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
-    if (username.length < 3) {
-      return NextResponse.json({ error: 'Username must be 3+ characters' }, { status: 400 });
+    if (typeof username !== 'string' || typeof password !== 'string') {
+      return NextResponse.json({ error: 'Invalid input types' }, { status: 400 });
+    }
+
+    if (username.length < 3 || username.length > 30) {
+      return NextResponse.json({ error: 'Username must be 3-30 characters' }, { status: 400 });
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+      return NextResponse.json({ error: 'Username can only contain letters, numbers, hyphens and underscores' }, { status: 400 });
     }
 
     if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {

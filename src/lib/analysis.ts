@@ -1,16 +1,16 @@
 // Game analysis utilities using Stockfish engine
 // Provides move classification, accuracy calculation, and game analysis
 
-import { Chess } from 'chess.js';
+import { Chess, Square, PieceSymbol } from 'chess.js';
 
 export interface PositionEval {
-  score: number;       // centipawns (positive = white advantage)
-  mate: number | null;  // mate in N moves (positive = white mates)
+  score: number;       // centipawns (positive = advantage for the side to move)
+  mate: number | null;  // mate in N moves (positive = mate for the side to move)
   bestMove: string;    // UCI format
   pv: string[];        // principal variation
 }
 
-export type MoveClassification = 'best' | 'good' | 'inaccuracy' | 'mistake' | 'blunder';
+export type MoveClassification = 'brilliant' | 'best' | 'good' | 'inaccuracy' | 'mistake' | 'blunder';
 
 export interface AnalyzedMove {
   move: string;          // SAN notation
@@ -42,12 +42,33 @@ export function classifyMove(cpLoss: number): MoveClassification {
 
 export function classificationColor(classification: MoveClassification): string {
   switch (classification) {
+    case 'brilliant': return '#26c6da';
     case 'best': return '#4caf50';
     case 'good': return '#8bc34a';
     case 'inaccuracy': return '#ffc107';
     case 'mistake': return '#ff9800';
     case 'blunder': return '#f44336';
   }
+}
+
+// Check if a move is brilliant: top engine choice, sacrifices material (no immediate recapture in PV),
+// and significantly better than the second-best move
+export function isBrilliantMove(
+  cpLoss: number,
+  isTopChoice: boolean,
+  pv: string[],
+  evalAdvantageOverSecond: number
+): boolean {
+  if (cpLoss > 20) return false;       // must be close to best
+  if (!isTopChoice) return false;       // must be engine's top choice
+  if (evalAdvantageOverSecond < 50) return false; // must be >=50cp better than 2nd best
+  // Check that the piece is not immediately recaptured (no recapture in first 2 PV moves)
+  if (pv.length >= 2) {
+    const moveTo = pv[0]?.slice(2, 4);
+    const nextTo = pv[1]?.slice(2, 4);
+    if (moveTo && nextTo && moveTo === nextTo) return false; // immediate recapture
+  }
+  return true;
 }
 
 // Convert centipawn score to win probability (for accuracy calculation)
@@ -65,6 +86,14 @@ export function calculateAccuracy(cpLosses: number[]): number {
     totalAccuracy += accuracy;
   }
   return Math.round((totalAccuracy / cpLosses.length) * 10) / 10;
+}
+
+// Stockfish scores are reported from the side-to-move perspective.
+// Over a single move transition, the mover is to move before the move and the
+// opponent is to move after the move, so the mover-relative cp loss is the
+// drop from `evalBefore.score` to `-evalAfter.score`.
+export function calculateCpLoss(evalBeforeScore: number, evalAfterScore: number): number {
+  return Math.max(0, evalBeforeScore + evalAfterScore);
 }
 
 // Parse Stockfish UCI info lines
@@ -143,10 +172,10 @@ export function analyzePositionWithWorker(
 export function uciToSan(fen: string, uci: string): string {
   try {
     const game = new Chess(fen);
-    const from = uci.slice(0, 2);
-    const to = uci.slice(2, 4);
-    const promotion = uci.length > 4 ? uci[4] : undefined;
-    const move = game.move({ from: from as any, to: to as any, promotion: promotion as any });
+    const from = uci.slice(0, 2) as Square;
+    const to = uci.slice(2, 4) as Square;
+    const promotion = uci.length > 4 ? (uci[4] as PieceSymbol) : undefined;
+    const move = game.move({ from, to, promotion });
     return move ? move.san : uci;
   } catch {
     return uci;

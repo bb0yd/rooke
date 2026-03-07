@@ -256,3 +256,41 @@
   text-align: center;
   color: var(--danger);
 }
+
+.reviewBtn {
+  background: #4a9eff;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 8px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.reviewBtn:hover {
+  background: #3a8eef;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .layout {
+    flex-direction: column;
+    height: auto;
+    overflow: auto;
+    width: 100%;
+  }
+
+  .mpBoard {
+    --sq: min(calc((100vw - 32px) / 8), 60px) !important;
+  }
+
+  .panel {
+    width: 100%;
+  }
+
+  .boardColumn {
+    width: 100%;
+  }
+}

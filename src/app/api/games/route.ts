@@ -47,24 +47,109 @@ export async function GET(req: NextRequest) {
   }
 
   const where = conditions.join(' AND ');
+  const includeMultiplayer = searchParams.get('include_multiplayer') === 'true';
 
-  // Get total count
-  const countResult = await pool.query(
-    `SELECT COUNT(*) as total FROM games WHERE ${where}`,
+  if (!includeMultiplayer) {
+    // Original behavior: query only the games table with server-side pagination
+    const countResult = await pool.query(
+      `SELECT COUNT(*) as total FROM games WHERE ${where}`,
+      params
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    const offset = (page - 1) * limit;
+    const dataResult = await pool.query(
+      `SELECT id, pgn, result, moves_count, opening_name, opponent, created_at, completed_at
+       FROM games WHERE ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+      [...params, limit, offset]
+    );
+
+    const games = dataResult.rows.map((g: any) => ({ ...g, source: 'local' }));
+
+    return NextResponse.json({
+      games,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    });
+  }
+
+  // Multiplayer-inclusive path: fetch both sources, merge, then paginate
+
+  // 1. Fetch all matching local games (no LIMIT/OFFSET yet -- we paginate after merge)
+  const localResult = await pool.query(
+    `SELECT id, pgn, result, moves_count, opening_name, opponent, created_at, completed_at
+     FROM games WHERE ${where} ORDER BY created_at DESC`,
     params
   );
-  const total = parseInt(countResult.rows[0].total);
+  const localGames = localResult.rows.map((g: any) => ({ ...g, source: 'local' }));
 
-  // Get paginated results
-  const offset = (page - 1) * limit;
-  const dataResult = await pool.query(
-    `SELECT id, pgn, result, moves_count, opening_name, opponent, created_at, completed_at
-     FROM games WHERE ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
-    [...params, limit, offset]
+  // 2. Fetch multiplayer games with parallel filter conditions
+  const mpConditions = ['(mg.white_user_id = $1 OR mg.black_user_id = $1)'];
+  const mpParams: any[] = [userId];
+  let mpIdx = 2;
+
+  if (result && result !== 'all') {
+    mpConditions.push(`mg.result = $${mpIdx++}`);
+    mpParams.push(result);
+  }
+  if (search) {
+    mpConditions.push(`(mg.pgn ILIKE $${mpIdx} OR opp.username ILIKE $${mpIdx})`);
+    mpParams.push(`%${search}%`);
+    mpIdx++;
+  }
+  if (from) {
+    mpConditions.push(`mg.started_at >= $${mpIdx++}`);
+    mpParams.push(from);
+  }
+  if (to) {
+    mpConditions.push(`mg.started_at <= $${mpIdx++}`);
+    mpParams.push(to);
+  }
+
+  const mpWhere = mpConditions.join(' AND ');
+
+  const mpResult = await pool.query(
+    `SELECT mg.id, mg.pgn, mg.result, mg.moves, mg.started_at,
+            mg.white_user_id, mg.black_user_id,
+            COALESCE(opp.username, 'Unknown') AS opponent_username
+     FROM multiplayer_games mg
+     LEFT JOIN users opp ON opp.id = CASE
+       WHEN mg.white_user_id = $1 THEN mg.black_user_id
+       ELSE mg.white_user_id
+     END
+     WHERE ${mpWhere}
+     ORDER BY mg.started_at DESC`,
+    mpParams
   );
 
+  const mpGames = mpResult.rows.map((g: any) => {
+    const movesStr: string = g.moves || '';
+    const movesCount = movesStr ? movesStr.split(',').length : 0;
+    return {
+      id: g.id,
+      pgn: g.pgn || '',
+      result: g.result || 'in_progress',
+      moves_count: movesCount,
+      created_at: g.started_at,
+      opening_name: null,
+      opponent: g.opponent_username,
+      source: 'multiplayer',
+    };
+  });
+
+  // 3. Merge and sort by created_at DESC, then paginate
+  const allGames = [...localGames, ...mpGames].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
+  const total = allGames.length;
+  const offset = (page - 1) * limit;
+  const paginatedGames = allGames.slice(offset, offset + limit);
+
   return NextResponse.json({
-    games: dataResult.rows,
+    games: paginatedGames,
     total,
     page,
     limit,

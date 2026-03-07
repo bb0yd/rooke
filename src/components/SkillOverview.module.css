@@ -1,0 +1,82 @@
+.container {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.title {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.gamesCount {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.skills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+.skillRow {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.skillRow.weakest .skillLabel {
+  color: var(--danger);
+}
+
+.skillLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.skillScore {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+}
+
+.barTrack {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.coaching {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.coachingLabel {
+  font-weight: 700;
+  color: var(--accent);
+}

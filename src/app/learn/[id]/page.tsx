@@ -1,14 +1,19 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
-import OpeningTrainer from '@/components/OpeningTrainer';
+import OpeningTrainer, { PracticeMode } from '@/components/OpeningTrainer';
 import { getOpeningById, Opening } from '@/data/openings';
 
 export default function LearnOpeningPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+  const requestedMode = searchParams.get('mode');
+  const initialMode: PracticeMode = requestedMode === 'random' || requestedMode === 'weakspots' || requestedMode === 'review'
+    ? requestedMode
+    : 'sequential';
   const [opening, setOpening] = useState<Opening | null | undefined>(undefined);
 
   useEffect(() => {
@@ -46,7 +51,7 @@ export default function LearnOpeningPage() {
 
   if (opening === undefined) {
     return (
-      <AppShell>
+      <AppShell wide>
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-secondary)' }}>
           Loading...
         </div>
@@ -56,7 +61,7 @@ export default function LearnOpeningPage() {
 
   if (!opening) {
     return (
-      <AppShell>
+      <AppShell wide>
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <h1>Opening not found</h1>
           <p style={{ color: 'var(--text-muted)' }}>
@@ -68,8 +73,8 @@ export default function LearnOpeningPage() {
   }
 
   return (
-    <AppShell>
-      <OpeningTrainer opening={opening} />
+    <AppShell wide>
+      <OpeningTrainer opening={opening} initialMode={initialMode} />
     </AppShell>
   );
 }

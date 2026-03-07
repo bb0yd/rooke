@@ -11,6 +11,13 @@ import styles from './puzzles.module.css';
 
 type Difficulty = 'all' | 'easy' | 'medium' | 'hard';
 
+// Collect all unique themes sorted by frequency (most common first)
+const ALL_THEMES: string[] = (() => {
+  const counts: Record<string, number> = {};
+  PUZZLES.forEach(p => p.themes.forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+  return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+})();
+
 interface PuzzleStat {
   attempts: number;
   solves: number;
@@ -19,13 +26,18 @@ interface PuzzleStat {
 
 type PuzzleStatsMap = Record<string, PuzzleStat>;
 
-function filterPuzzles(difficulty: Difficulty): Puzzle[] {
+function filterPuzzles(difficulty: Difficulty, theme: string = ''): Puzzle[] {
+  let result: Puzzle[];
   switch (difficulty) {
-    case 'easy': return PUZZLES.filter(p => p.rating < 1000);
-    case 'medium': return PUZZLES.filter(p => p.rating >= 1000 && p.rating < 1400);
-    case 'hard': return PUZZLES.filter(p => p.rating >= 1400);
-    default: return [...PUZZLES];
+    case 'easy': result = PUZZLES.filter(p => p.rating < 1000); break;
+    case 'medium': result = PUZZLES.filter(p => p.rating >= 1000 && p.rating < 1400); break;
+    case 'hard': result = PUZZLES.filter(p => p.rating >= 1400); break;
+    default: result = [...PUZZLES];
   }
+  if (theme) {
+    result = result.filter(p => p.themes.includes(theme));
+  }
+  return result;
 }
 
 function shuffle<T>(arr: T[]): T[] {
@@ -40,6 +52,7 @@ function shuffle<T>(arr: T[]): T[] {
 export default function PuzzlesPage() {
   const [boardTheme, setBoardTheme] = useState('classic');
   const [difficulty, setDifficulty] = useState<Difficulty>('all');
+  const [themeFilter, setThemeFilter] = useState<string>('');
   const [puzzleQueue, setPuzzleQueue] = useState<Puzzle[]>(() => shuffle(PUZZLES));
   const [queueIndex, setQueueIndex] = useState(0);
   const [game, setGame] = useState<Chess>(() => new Chess());
@@ -58,8 +71,36 @@ export default function PuzzlesPage() {
   const [puzzleStartTime, setPuzzleStartTime] = useState<number>(Date.now());
   const autoPlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Puzzle Rush state
+  const [rushMode, setRushMode] = useState(false);
+  const [rushTimeLeft, setRushTimeLeft] = useState(180);
+  const [rushSolved, setRushSolved] = useState(0);
+  const [rushOver, setRushOver] = useState(false);
+  const [rushHighScore, setRushHighScore] = useState(0);
+  const rushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const puzzle = puzzleQueue[queueIndex] || PUZZLES[0];
   const currentStat = puzzleStats[puzzle.id] || null;
+
+  // Load rush high score and theme filter from localStorage
+  useEffect(() => {
+    const hs = localStorage.getItem('puzzleRushHighScore');
+    if (hs) setRushHighScore(parseInt(hs));
+    const savedTheme = localStorage.getItem('puzzleThemeFilter');
+    if (savedTheme && ALL_THEMES.includes(savedTheme)) {
+      setThemeFilter(savedTheme);
+      const filtered = shuffle(filterPuzzles('all', savedTheme));
+      if (filtered.length > 0) {
+        setPuzzleQueue(filtered);
+        setQueueIndex(0);
+      }
+    }
+  }, []);
+
+  // Cleanup rush timer on unmount
+  useEffect(() => {
+    return () => { if (rushTimerRef.current) clearInterval(rushTimerRef.current); };
+  }, []);
 
   useEffect(() => {
     const s = getSettings();
@@ -105,16 +146,27 @@ export default function PuzzlesPage() {
   }, [queueIndex, puzzleQueue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle difficulty change
-  function changeDifficulty(d: Difficulty) {
+  function changeDifficulty(d: Difficulty, theme: string = themeFilter) {
     setDifficulty(d);
     const filtered = ratedMode && puzzleRating != null
-      ? shuffle(PUZZLES.filter(p => Math.abs(p.rating - puzzleRating) <= 200))
-      : shuffle(filterPuzzles(d));
-    setPuzzleQueue(filtered.length > 0 ? filtered : shuffle(filterPuzzles(d)));
+      ? shuffle(PUZZLES.filter(p => Math.abs(p.rating - puzzleRating) <= 200 && (!theme || p.themes.includes(theme))))
+      : shuffle(filterPuzzles(d, theme));
+    setPuzzleQueue(filtered.length > 0 ? filtered : shuffle(filterPuzzles(d, theme)));
     setQueueIndex(0);
     setStreak(0);
     setCorrectCount(0);
     setWrongCount(0);
+  }
+
+  // Handle theme filter change
+  function changeThemeFilter(theme: string) {
+    setThemeFilter(theme);
+    if (theme) {
+      localStorage.setItem('puzzleThemeFilter', theme);
+    } else {
+      localStorage.removeItem('puzzleThemeFilter');
+    }
+    changeDifficulty(difficulty, theme);
   }
 
   // Handle rated mode toggle
@@ -122,7 +174,7 @@ export default function PuzzlesPage() {
     const next = !ratedMode;
     setRatedMode(next);
     if (next && puzzleRating != null) {
-      const ratedPuzzles = shuffle(PUZZLES.filter(p => Math.abs(p.rating - puzzleRating) <= 200));
+      const ratedPuzzles = shuffle(PUZZLES.filter(p => Math.abs(p.rating - puzzleRating) <= 200 && (!themeFilter || p.themes.includes(themeFilter))));
       if (ratedPuzzles.length > 0) {
         setPuzzleQueue(ratedPuzzles);
         setQueueIndex(0);
@@ -133,7 +185,7 @@ export default function PuzzlesPage() {
       }
     }
     // Fall back to current difficulty filter
-    const filtered = shuffle(filterPuzzles(difficulty));
+    const filtered = shuffle(filterPuzzles(difficulty, themeFilter));
     setPuzzleQueue(filtered);
     setQueueIndex(0);
     setStreak(0);
@@ -170,6 +222,57 @@ export default function PuzzlesPage() {
         .catch(() => {});
     }
   }
+
+  // Puzzle Rush functions
+  function endRush() {
+    if (rushTimerRef.current) {
+      clearInterval(rushTimerRef.current);
+      rushTimerRef.current = null;
+    }
+    setRushOver(true);
+    setRushMode(false);
+  }
+
+  function startRush() {
+    setRushMode(true);
+    setRushTimeLeft(180);
+    setRushSolved(0);
+    setRushOver(false);
+    setHadMistake(false);
+    const q = shuffle([...PUZZLES]);
+    setPuzzleQueue(q);
+    setQueueIndex(0);
+
+    rushTimerRef.current = setInterval(() => {
+      setRushTimeLeft(t => {
+        if (t <= 1) {
+          endRush();
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+  }
+
+  // Rush mode: auto-advance on completion
+  useEffect(() => {
+    if (rushMode && feedback === 'complete') {
+      const solved = rushSolved + 1;
+      setRushSolved(solved);
+      if (solved > rushHighScore) {
+        setRushHighScore(solved);
+        localStorage.setItem('puzzleRushHighScore', String(solved));
+      }
+      setTimeout(() => nextPuzzle(), 300);
+    }
+  }, [feedback, rushMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Rush mode: end on wrong answer
+  useEffect(() => {
+    if (rushMode && feedback === 'incorrect') {
+      endRush();
+    }
+  }, [feedback, rushMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMove = useCallback((from: Square, to: Square, promotion?: PieceSymbol) => {
     if (feedback === 'complete') return;
@@ -262,7 +365,7 @@ export default function PuzzlesPage() {
       setQueueIndex(queueIndex + 1);
     } else {
       // Reshuffle and restart
-      setPuzzleQueue(shuffle(filterPuzzles(difficulty)));
+      setPuzzleQueue(shuffle(filterPuzzles(difficulty, themeFilter)));
       setQueueIndex(0);
     }
   }
@@ -345,6 +448,41 @@ export default function PuzzlesPage() {
               </button>
             </div>
 
+            {/* Theme filter */}
+            <div className={styles.filterRow}>
+              <button
+                className={`${styles.themeChip} ${themeFilter === '' ? styles.themeChipActive : ''}`}
+                onClick={() => changeThemeFilter('')}
+              >
+                All
+              </button>
+              {ALL_THEMES.map(t => (
+                <button
+                  key={t}
+                  className={`${styles.themeChip} ${themeFilter === t ? styles.themeChipActive : ''}`}
+                  onClick={() => changeThemeFilter(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {/* Puzzle Rush */}
+            <div className={styles.rushRow}>
+              {!rushMode && !rushOver ? (
+                <button className={styles.rushBtn} onClick={startRush}>
+                  Puzzle Rush {rushHighScore > 0 && <span className={styles.rushHs}>Best: {rushHighScore}</span>}
+                </button>
+              ) : rushMode ? (
+                <div className={styles.rushTimer}>
+                  <span className={styles.rushTimerValue}>
+                    {Math.floor(rushTimeLeft / 60)}:{String(rushTimeLeft % 60).padStart(2, '0')}
+                  </span>
+                  <span className={styles.rushSolved}>{rushSolved} solved</span>
+                </div>
+              ) : null}
+            </div>
+
             {/* Puzzle rating display */}
             {ratedMode && puzzleRating != null && (
               <div className={styles.ratingDisplay}>
@@ -393,6 +531,22 @@ export default function PuzzlesPage() {
           </div>
         </div>
       </div>
+      {rushOver && (
+        <div className={styles.rushOverlay}>
+          <div className={styles.rushModal}>
+            <h2>Puzzle Rush Complete!</h2>
+            <div className={styles.rushScore}>{rushSolved}</div>
+            <div className={styles.rushScoreLabel}>puzzles solved</div>
+            {rushSolved >= rushHighScore && rushSolved > 0 && (
+              <div className={styles.rushNewRecord}>New Record!</div>
+            )}
+            <div className={styles.rushActions}>
+              <button className={styles.rushBtn} onClick={startRush}>Play Again</button>
+              <button className={styles.toolBtn} onClick={() => setRushOver(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -4,7 +4,6 @@
   align-items: stretch;
   height: calc(100vh - 80px);
   overflow: hidden;
-  /* Break out of the 900px max-width wrapper */
   width: calc(100vw - var(--sidebar-width) - 48px);
   max-width: none;
 }
@@ -18,7 +17,6 @@
 }
 
 .trainerBoard {
-  /* sidebar=220  padding=48  gap=24  panel=320 → reserve ~612px from vw */
   --sq: min((100vh - 100px) / 8, (100vw - 620px) / 8) !important;
 }
 
@@ -219,6 +217,40 @@
   flex-wrap: wrap;
 }
 
+@media (max-width: 1024px) {
+  .layout {
+    flex-direction: column;
+    align-items: center;
+    height: auto;
+    overflow: visible;
+    width: 100%;
+    gap: 18px;
+  }
+
+  .boardColumn {
+    width: 100%;
+  }
+
+  .trainerBoard {
+    --sq: min((100vw - 96px) / 8, (100vh - 320px) / 8) !important;
+  }
+
+  .panel {
+    width: min(760px, 100%);
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout {
+    gap: 16px;
+  }
+
+  .trainerBoard {
+    --sq: min((100vw - 48px) / 8, (100vh - 320px) / 8) !important;
+  }
+}
+
 .buttons button {
   background: var(--bg-card);
   color: var(--text-primary);
@@ -316,6 +348,44 @@
 .lineBtnComplete {
   border-color: var(--accent) !important;
   color: var(--accent);
+}
+
+.lineRow {
+  display: flex;
+  gap: 2px;
+  align-items: stretch;
+}
+
+.lineRow .lineBtn {
+  flex: 1;
+  min-width: 0;
+}
+
+.lineReorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.reorderBtn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.55rem;
+  padding: 0 4px;
+  cursor: pointer;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.reorderBtn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.reorderBtn:disabled {
+  opacity: 0.2;
+  cursor: default;
 }
 
 /* Mode selector */

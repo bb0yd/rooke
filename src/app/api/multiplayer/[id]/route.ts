@@ -3,6 +3,16 @@ import pool from '@/lib/db';
 import { verifyToken } from '@/lib/auth';
 import { Chess } from 'chess.js';
 
+function parseTimeControl(tc: string): { baseMs: number; incrementMs: number } | null {
+  if (!tc || tc === 'none') return null;
+  const match = tc.match(/^(\d+)\+(\d+)$/);
+  if (!match) return null;
+  return {
+    baseMs: parseInt(match[1]) * 60 * 1000,
+    incrementMs: parseInt(match[2]) * 1000,
+  };
+}
+
 function getUserId(req: NextRequest): number | null {
   const token = req.cookies.get('token')?.value;
   if (!token) return null;
@@ -49,7 +59,17 @@ export async function POST(
   }
 
   const { id } = await params;
-  const { from, to, promotion } = await req.json();
+  const body = await req.json();
+  const { from, to, promotion } = body;
+
+  // Validate move input
+  const squareRegex = /^[a-h][1-8]$/;
+  if (!from || !to || !squareRegex.test(from) || !squareRegex.test(to)) {
+    return NextResponse.json({ error: 'Invalid move: from and to must be valid squares (e.g. e2, e4)' }, { status: 400 });
+  }
+  if (promotion !== undefined && !/^[qrbn]$/.test(promotion)) {
+    return NextResponse.json({ error: 'Invalid promotion piece' }, { status: 400 });
+  }
 
   // Fetch the game
   const gameResult = await pool.query(
@@ -79,10 +99,73 @@ export async function POST(
     return NextResponse.json({ error: 'Not your turn' }, { status: 403 });
   }
 
+  // Time control enforcement
+  const tc = parseTimeControl(gameRow.time_control);
+  let whiteTimeMs: number | null = gameRow.white_time_remaining_ms;
+  let blackTimeMs: number | null = gameRow.black_time_remaining_ms;
+  const now = Date.now();
+
+  if (tc) {
+    const lastTimestamp: number | null = gameRow.last_move_timestamp
+      ? Number(gameRow.last_move_timestamp)
+      : null;
+
+    if (lastTimestamp !== null) {
+      const elapsed = now - lastTimestamp;
+
+      if (currentTurn === 'w') {
+        whiteTimeMs = (whiteTimeMs ?? tc.baseMs) - elapsed;
+        if (whiteTimeMs <= 0) {
+          await pool.query(
+            `UPDATE multiplayer_games
+             SET result = 'black_wins', completed_at = NOW(),
+                 white_time_remaining_ms = 0, last_move_timestamp = $1
+             WHERE id = $2`,
+            [now, id]
+          );
+          return NextResponse.json({
+            success: false,
+            result: 'black_wins',
+            reason: 'timeout',
+            white_time_remaining_ms: 0,
+            black_time_remaining_ms: blackTimeMs,
+          });
+        }
+      } else {
+        blackTimeMs = (blackTimeMs ?? tc.baseMs) - elapsed;
+        if (blackTimeMs <= 0) {
+          await pool.query(
+            `UPDATE multiplayer_games
+             SET result = 'white_wins', completed_at = NOW(),
+                 black_time_remaining_ms = 0, last_move_timestamp = $1
+             WHERE id = $2`,
+            [now, id]
+          );
+          return NextResponse.json({
+            success: false,
+            result: 'white_wins',
+            reason: 'timeout',
+            white_time_remaining_ms: whiteTimeMs,
+            black_time_remaining_ms: 0,
+          });
+        }
+      }
+    }
+  }
+
   // Try the move
   const move = chess.move({ from, to, promotion });
   if (!move) {
     return NextResponse.json({ error: 'Invalid move' }, { status: 400 });
+  }
+
+  // Apply increment to the player who just moved
+  if (tc) {
+    if (currentTurn === 'w') {
+      whiteTimeMs = (whiteTimeMs ?? tc.baseMs) + tc.incrementMs;
+    } else {
+      blackTimeMs = (blackTimeMs ?? tc.baseMs) + tc.incrementMs;
+    }
   }
 
   // Update game state
@@ -102,9 +185,11 @@ export async function POST(
 
   await pool.query(
     `UPDATE multiplayer_games
-     SET fen = $1, pgn = $2, moves = $3, result = $4, completed_at = $5, last_move_at = NOW()
-     WHERE id = $6`,
-    [newFen, pgn, movesList, result, completedAt, id]
+     SET fen = $1, pgn = $2, moves = $3, result = $4, completed_at = $5,
+         last_move_at = NOW(), white_time_remaining_ms = $6,
+         black_time_remaining_ms = $7, last_move_timestamp = $8
+     WHERE id = $9`,
+    [newFen, pgn, movesList, result, completedAt, whiteTimeMs, blackTimeMs, now, id]
   );
 
   return NextResponse.json({
@@ -113,6 +198,8 @@ export async function POST(
     pgn,
     move: { from: move.from, to: move.to, san: move.san },
     result,
+    white_time_remaining_ms: whiteTimeMs,
+    black_time_remaining_ms: blackTimeMs,
   });
 }
 
@@ -127,7 +214,12 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const { action } = await req.json(); // 'resign' or 'draw'
+  const { action } = await req.json();
+
+  const validActions = ['resign', 'offer_draw', 'accept_draw', 'decline_draw'];
+  if (!action || !validActions.includes(action)) {
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  }
 
   const gameResult = await pool.query(
     `SELECT * FROM multiplayer_games WHERE id = $1 AND (white_user_id = $2 OR black_user_id = $2)`,

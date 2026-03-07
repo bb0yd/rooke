@@ -264,3 +264,75 @@
   color: var(--text-secondary);
   padding: 4px 0;
 }
+
+/* Database source toggle */
+.dbToggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.dbToggleBtn {
+  flex: 1;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 5px 0;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.dbToggleBtn:first-child {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.dbToggleBtn:last-child {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  border-left: none;
+}
+
+.dbToggleBtnActive {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* W/D/L bar */
+.wdlBar {
+  display: flex;
+  height: 18px;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.wdlW {
+  background: #f0f0f0;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.wdlD {
+  background: #888;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}
+
+.wdlB {
+  background: #333;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+}

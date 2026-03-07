@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
-import { getSettings, updateSettings, SoundPack, PieceSet, NotificationPrefs } from '@/lib/settings';
+import { getSettings, updateSettings, SoundPack, PieceSet, NotificationPrefs, Theme } from '@/lib/settings';
 import { playMoveSound, playCaptureSound, playCheckSound } from '@/lib/sounds';
 import styles from './settings.module.css';
 
@@ -28,6 +28,7 @@ const PIECE_SETS: { id: PieceSet; label: string }[] = [
 ];
 
 export default function SettingsPage() {
+  const [theme, setTheme] = useState<Theme>('dark');
   const [soundPack, setSoundPack] = useState<SoundPack>('standard');
   const [boardTheme, setBoardTheme] = useState('classic');
   const [pieceSet, setPieceSet] = useState<PieceSet>('standard');
@@ -38,6 +39,8 @@ export default function SettingsPage() {
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>({ challenges: true, friendRequests: true, gameUpdates: true });
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileMsg, setProfileMsg] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -45,6 +48,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const s = getSettings();
+    setTheme(s.theme || 'dark');
     setSoundPack(s.soundPack);
     setBoardTheme(s.boardTheme);
     setPieceSet(s.pieceSet || 'standard');
@@ -64,12 +68,28 @@ export default function SettingsPage() {
             .then(profile => {
               if (profile.display_name) setDisplayName(profile.display_name);
               if (profile.bio) setBio(profile.bio);
+              if (profile.avatar_url) setAvatarUrl(profile.avatar_url);
             })
             .catch(() => {});
         }
       })
       .catch(() => {});
   }, []);
+
+  function handleAppThemeChange(t: Theme) {
+    setTheme(t);
+    updateSettings({ theme: t });
+    applyTheme(t);
+  }
+
+  function applyTheme(t: Theme) {
+    if (t === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    } else {
+      document.documentElement.setAttribute('data-theme', t);
+    }
+  }
 
   function handleSoundChange(pack: SoundPack) {
     setSoundPack(pack);
@@ -95,6 +115,25 @@ export default function SettingsPage() {
     updateSettings({ soundPack: prev === pack ? pack : prev });
     if (prev !== pack) {
       setTimeout(() => updateSettings({ soundPack: soundPack }), 750);
+    }
+  }
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const res = await fetch('/api/users/avatar', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (res.ok && data.avatarUrl) {
+        setAvatarUrl(data.avatarUrl);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setAvatarUploading(false);
     }
   }
 
@@ -145,6 +184,21 @@ export default function SettingsPage() {
     <AppShell>
       <div className={styles.page}>
         <h1 className={styles.title}>Settings</h1>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Theme</h2>
+          <div className={styles.themeOptions}>
+            {(['dark', 'light', 'system'] as Theme[]).map(t => (
+              <label
+                key={t}
+                className={`${styles.themeOption} ${theme === t ? styles.themeOptionActive : ''}`}
+                onClick={() => handleAppThemeChange(t)}
+              >
+                <span className={styles.themeLabel}>{t.charAt(0).toUpperCase() + t.slice(1)}</span>
+              </label>
+            ))}
+          </div>
+        </section>
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Board Theme</h2>
@@ -288,6 +342,28 @@ export default function SettingsPage() {
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>Profile</h2>
+          <div className={styles.avatarSection}>
+            <div className={styles.avatarPreview}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="Avatar" />
+              ) : (
+                <span className={styles.avatarPlaceholder}>&#9823;</span>
+              )}
+            </div>
+            <div className={styles.avatarControls}>
+              <label className={styles.avatarUploadBtn}>
+                {avatarUploading ? 'Uploading...' : 'Upload Avatar'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarUpload}
+                  style={{ display: 'none' }}
+                  disabled={avatarUploading}
+                />
+              </label>
+              <span className={styles.avatarHint}>JPEG, PNG, or WebP · Max 2MB</span>
+            </div>
+          </div>
           <div className={styles.formGroup}>
             <label className={styles.formLabel}>Display Name</label>
             <input
